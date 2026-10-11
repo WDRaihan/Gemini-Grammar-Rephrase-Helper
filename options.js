@@ -2,6 +2,7 @@
 
 const apiKeyInput = document.getElementById('api-key');
 const modelSelect = document.getElementById('model-select');
+const autoCheckToggle = document.getElementById('auto-check-toggle');
 const saveButton = document.getElementById('save-btn');
 const testButton = document.getElementById('test-btn');
 const detectButton = document.getElementById('detect-btn');
@@ -9,13 +10,16 @@ const statusDiv = document.getElementById('status');
 
 // Load saved settings
 function loadOptions() {
-  chrome.storage.sync.get(['geminiApiKey', 'geminiModel'], (result) => {
+  chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'autoCheckEnabled'], (result) => {
     if (result.geminiApiKey) {
       apiKeyInput.value = result.geminiApiKey;
     }
     if (result.geminiModel) {
       ensureOptionExists(result.geminiModel);
       modelSelect.value = result.geminiModel;
+    }
+    if (autoCheckToggle) {
+      autoCheckToggle.checked = result.autoCheckEnabled === true;
     }
   });
 }
@@ -54,13 +58,18 @@ function showStatus(text, color = '#28a745', timeoutMs = 5000) {
 function saveOptions() {
   const apiKey = apiKeyInput.value.trim();
   const model = modelSelect.value;
+  const autoCheckEnabled = autoCheckToggle ? autoCheckToggle.checked : false;
 
   if (!apiKey) {
     showStatus('Please enter an API key.', '#dc3545');
     return;
   }
 
-  chrome.storage.sync.set({ geminiApiKey: apiKey, geminiModel: model }, () => {
+  chrome.storage.sync.set({
+    geminiApiKey: apiKey,
+    geminiModel: model,
+    autoCheckEnabled: autoCheckEnabled
+  }, () => {
     showStatus('Settings saved successfully!', '#28a745');
   });
 }
@@ -143,6 +152,44 @@ async function fetchAvailableModels(showSuccessMsg = true) {
   }
 }
 
+// Friendly error formatter for options page
+function formatFriendlyErrorMessage(rawError, modelName = '') {
+  if (!rawError) return "Connection failed.";
+  const lower = rawError.toLowerCase();
+
+  if (lower.includes("quota") || lower.includes("rate limit") || lower.includes("resource has been exhausted") || lower.includes("free_tier_requests")) {
+    const retryMatch = rawError.match(/retry in\s+([0-9a-z.]+)/i);
+    let timeText = "";
+    if (retryMatch && retryMatch[1]) {
+      const cleanTime = retryMatch[1].replace(/\.\d+s/, 's').replace(/([0-9]+[a-z]+)/g, '$1 ').trim();
+      timeText = ` (resets in ~${cleanTime})`;
+    }
+    return `Free quota limit reached for this model${timeText}. Try another model or wait for quota reset.`;
+  }
+
+  if (lower.includes("no longer available") || lower.includes("not found") || lower.includes("not supported") || lower.includes("listmodels")) {
+    return `Model "${modelName}" is no longer available. Click "Auto-Detect" to load your available models.`;
+  }
+
+  if (lower.includes("api_key_invalid") || lower.includes("api key not valid") || lower.includes("unregistered callers")) {
+    return "API key is invalid. Please verify and re-paste your key from Google AI Studio.";
+  }
+
+  if (lower.includes("high demand") || lower.includes("overloaded") || lower.includes("503")) {
+    return "Gemini servers are currently experiencing high demand. Please try again shortly.";
+  }
+
+  let cleanMsg = rawError
+    .replace(/^Gemini API Error\s*\(/i, '')
+    .replace(/\)$/, '')
+    .replace(/https?:\/\/[^\s)]+/g, '')
+    .replace(/\s*\*+\s*/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return cleanMsg;
+}
+
 // Test connection with Google Gemini API
 async function testConnection() {
   const apiKey = apiKeyInput.value.trim();
@@ -180,31 +227,8 @@ async function testConnection() {
         }
       } catch (_) {}
 
-      // If model not found or not supported, auto-detect available models
-      if (response.status === 404 || errorMsg.includes('not found') || errorMsg.includes('not supported')) {
-        showStatus(`Model "${model}" not found. Auto-detecting your available models...`, '#f59e0b', 0);
-        const detectedModel = await fetchAvailableModels(false);
-        if (detectedModel) {
-          // Test the newly detected model right away
-          try {
-            const testUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(detectedModel)}:generateContent`;
-            const testRes = await fetch(testUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
-              body: JSON.stringify({ contents: [{ parts: [{ text: "ping" }] }] })
-            });
-            if (testRes.ok) {
-              showStatus(`Connection successful! (Switched to "${detectedModel}" and saved)`, '#28a745', 6000);
-            } else {
-              showStatus(`Switched to "${detectedModel}". Click "Test Connection" to test it.`, '#28a745', 7000);
-            }
-          } catch (_) {
-            showStatus(`Switched to "${detectedModel}". Click "Test Connection" to test it.`, '#28a745', 7000);
-          }
-        }
-      } else {
-        showStatus(`Test failed: ${errorMsg}`, '#dc3545', 7000);
-      }
+      const friendly = formatFriendlyErrorMessage(errorMsg, model);
+      showStatus(`Test failed: ${friendly}`, '#dc3545', 9000);
     }
   } catch (err) {
     showStatus(`Network error: ${err.message}`, '#dc3545', 7000);

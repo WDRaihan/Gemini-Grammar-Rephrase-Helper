@@ -194,3 +194,318 @@ async function copyToClipboard(text, button) {
     }
   }
 }
+
+/* ==========================================================================
+   Real-Time Inline Grammar Checker (Grammarly-Style)
+   ========================================================================== */
+
+let isAutoCheckEnabled = false;
+let activeInputElement = null;
+let inlineDebounceTimer = null;
+let currentInlineCorrection = null;
+let activeInlineBadge = null;
+let activeInlinePopover = null;
+
+// Initialize setting from storage
+chrome.storage.sync.get(['autoCheckEnabled'], (result) => {
+  isAutoCheckEnabled = result.autoCheckEnabled === true;
+});
+
+// Update when user toggles setting in options
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'sync' && changes.autoCheckEnabled) {
+    isAutoCheckEnabled = Boolean(changes.autoCheckEnabled.newValue);
+    if (!isAutoCheckEnabled) {
+      removeInlineBadge();
+      removeInlinePopover();
+    }
+  }
+});
+
+function isEditableInput(element) {
+  if (!element || !(element instanceof HTMLElement)) return false;
+  if (element.tagName === 'TEXTAREA') return true;
+  if (element.tagName === 'INPUT') {
+    const type = (element.getAttribute('type') || 'text').toLowerCase();
+    return ['text', 'search', 'email', 'url'].includes(type);
+  }
+  if (element.isContentEditable) return true;
+  return false;
+}
+
+function getFieldText(el) {
+  if (!el) return '';
+  if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
+    return el.value || '';
+  }
+  if (el.isContentEditable) {
+    return el.innerText || '';
+  }
+  return '';
+}
+
+function setFieldText(el, newText) {
+  if (!el) return false;
+  if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
+    el.focus();
+    try {
+      el.setSelectionRange(0, el.value.length);
+      const ok = document.execCommand('insertText', false, newText);
+      if (!ok) throw new Error();
+    } catch (_) {
+      el.value = newText;
+    }
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    el.dispatchEvent(new Event('change', { bubbles: true }));
+    return true;
+  }
+  if (el.isContentEditable) {
+    el.focus();
+    try {
+      document.execCommand('selectAll', false, null);
+      document.execCommand('insertText', false, newText);
+    } catch (_) {
+      el.innerText = newText;
+    }
+    el.dispatchEvent(new Event('input', { bubbles: true }));
+    return true;
+  }
+  return false;
+}
+
+function ensureInlineBadge() {
+  if (activeInlineBadge) return activeInlineBadge;
+  const badge = document.createElement('div');
+  badge.id = 'gemini-inline-badge';
+  badge.innerHTML = `<span class="gemini-badge-icon">✦</span><span class="gemini-badge-text">Gemini</span>`;
+  document.body.appendChild(badge);
+  activeInlineBadge = badge;
+
+  badge.addEventListener('mousedown', (e) => {
+    e.preventDefault(); // Prevent input from losing focus
+  });
+
+  badge.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (badge.classList.contains('has-error') && currentInlineCorrection) {
+      toggleInlinePopover();
+    }
+  });
+
+  return badge;
+}
+
+function removeInlineBadge() {
+  if (activeInlineBadge) {
+    activeInlineBadge.remove();
+    activeInlineBadge = null;
+  }
+}
+
+function updateBadgePosition() {
+  if (!activeInlineBadge || !activeInputElement) return;
+  const rect = activeInputElement.getBoundingClientRect();
+  if (rect.width === 0 || rect.height === 0) {
+    activeInlineBadge.style.display = 'none';
+    return;
+  }
+
+  activeInlineBadge.style.display = 'inline-flex';
+  const isSingleLine = rect.height < 45;
+  let top, left;
+
+  if (isSingleLine) {
+    top = window.scrollY + rect.top + (rect.height - 24) / 2;
+    left = window.scrollX + rect.right - 42;
+  } else {
+    top = window.scrollY + rect.bottom - 32;
+    left = window.scrollX + rect.right - 46;
+  }
+
+  activeInlineBadge.style.top = `${Math.max(0, top)}px`;
+  activeInlineBadge.style.left = `${Math.max(0, left)}px`;
+
+  if (activeInlinePopover) {
+    positionInlinePopover();
+  }
+}
+
+function setBadgeState(state, text = '') {
+  const badge = ensureInlineBadge();
+  badge.className = '';
+  badge.classList.add(state);
+
+  const iconEl = badge.querySelector('.gemini-badge-icon');
+  const textEl = badge.querySelector('.gemini-badge-text');
+
+  if (state === 'checking') {
+    if (iconEl) iconEl.textContent = '✦';
+    if (textEl) textEl.textContent = 'Checking...';
+  } else if (state === 'has-error') {
+    if (iconEl) iconEl.innerHTML = `<span class="gemini-badge-dot"></span> ✦`;
+    if (textEl) textEl.textContent = text || 'Fix Available';
+  } else if (state === 'clean') {
+    if (iconEl) iconEl.textContent = '✓';
+    if (textEl) textEl.textContent = text || 'Correct';
+    setTimeout(() => {
+      if (badge && badge.classList.contains('clean')) {
+        badge.style.opacity = '0';
+        setTimeout(() => {
+          if (badge && badge.style.opacity === '0') removeInlineBadge();
+        }, 300);
+      }
+    }, 2500);
+  }
+  updateBadgePosition();
+}
+
+function positionInlinePopover() {
+  if (!activeInlinePopover || !activeInlineBadge) return;
+  const badgeRect = activeInlineBadge.getBoundingClientRect();
+  const popoverWidth = 320;
+  let top = window.scrollY + badgeRect.top - 210;
+  let left = window.scrollX + badgeRect.right - popoverWidth;
+
+  if (badgeRect.top < 230) {
+    top = window.scrollY + badgeRect.bottom + 8;
+  }
+  if (left < 10) left = 10;
+
+  activeInlinePopover.style.top = `${top}px`;
+  activeInlinePopover.style.left = `${left}px`;
+}
+
+function toggleInlinePopover() {
+  if (activeInlinePopover) {
+    removeInlinePopover();
+    return;
+  }
+  if (!currentInlineCorrection || !activeInputElement) return;
+
+  const popover = document.createElement('div');
+  popover.id = 'gemini-inline-popover';
+  popover.innerHTML = `
+    <div class="popover-header">
+      <h4 class="popover-title"><span>✦</span> Gemini Grammar Fix</h4>
+      <button class="popover-close" aria-label="Close">&times;</button>
+    </div>
+    <div class="popover-body">
+      <p class="popover-explanation">${escapeHTML(currentInlineCorrection.explanation || 'Suggested grammar and spelling fix:')}</p>
+      <div class="popover-diff">
+        <div style="color: #94a3b8; font-size: 11px; margin-bottom: 2px;">BEFORE</div>
+        <del>${escapeHTML(currentInlineCorrection.originalText)}</del>
+        <div style="color: #166534; font-size: 11px; margin: 8px 0 2px 0; font-weight: 600;">SUGGESTION</div>
+        <ins>${escapeHTML(currentInlineCorrection.correctedText)}</ins>
+      </div>
+      <div class="popover-actions">
+        <button class="btn-apply-fix">Apply Fix</button>
+        <button class="btn-dismiss-fix">Dismiss</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(popover);
+  activeInlinePopover = popover;
+  positionInlinePopover();
+
+  popover.querySelector('.popover-close').addEventListener('click', removeInlinePopover);
+  popover.querySelector('.btn-dismiss-fix').addEventListener('click', removeInlinePopover);
+
+  popover.querySelector('.btn-apply-fix').addEventListener('click', () => {
+    if (activeInputElement && currentInlineCorrection) {
+      setFieldText(activeInputElement, currentInlineCorrection.correctedText);
+      setBadgeState('clean', 'Fixed!');
+      currentInlineCorrection = null;
+      removeInlinePopover();
+    }
+  });
+}
+
+function removeInlinePopover() {
+  if (activeInlinePopover) {
+    activeInlinePopover.remove();
+    activeInlinePopover = null;
+  }
+}
+
+function scheduleInlineCheck(el) {
+  if (!isAutoCheckEnabled || !isEditableInput(el)) return;
+  activeInputElement = el;
+
+  if (inlineDebounceTimer) {
+    clearTimeout(inlineDebounceTimer);
+  }
+
+  const text = getFieldText(el).trim();
+  if (text.length < 15) {
+    removeInlineBadge();
+    removeInlinePopover();
+    return;
+  }
+
+  // Show idle/checking badge position
+  ensureInlineBadge();
+  updateBadgePosition();
+
+  // Wait 1.8 seconds after user finishes typing
+  inlineDebounceTimer = setTimeout(async () => {
+    const currentText = getFieldText(el).trim();
+    if (currentText.length < 15) return;
+
+    setBadgeState('checking');
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'AUTO_CHECK_GRAMMAR',
+        text: currentText
+      });
+
+      if (!response?.success) {
+        removeInlineBadge();
+        return;
+      }
+
+      if (response.hasErrors && response.correctedText) {
+        currentInlineCorrection = {
+          originalText: currentText,
+          correctedText: response.correctedText,
+          explanation: response.explanation
+        };
+        setBadgeState('has-error', 'Fix Available');
+      } else {
+        currentInlineCorrection = null;
+        setBadgeState('clean', 'Looking good');
+      }
+    } catch (_) {
+      removeInlineBadge();
+    }
+  }, 1800);
+}
+
+// Global delegated event listeners for real-time checking
+document.addEventListener('focusin', (e) => {
+  if (isAutoCheckEnabled && isEditableInput(e.target)) {
+    activeInputElement = e.target;
+    const text = getFieldText(e.target).trim();
+    if (text.length >= 15) {
+      ensureInlineBadge();
+      updateBadgePosition();
+    }
+  }
+}, true);
+
+document.addEventListener('input', (e) => {
+  if (isAutoCheckEnabled && isEditableInput(e.target)) {
+    scheduleInlineCheck(e.target);
+  }
+}, true);
+
+document.addEventListener('click', (e) => {
+  if (activeInlinePopover && !e.target.closest('#gemini-inline-popover') && !e.target.closest('#gemini-inline-badge')) {
+    removeInlinePopover();
+  }
+});
+
+window.addEventListener('scroll', updateBadgePosition, { passive: true });
+window.addEventListener('resize', updateBadgePosition, { passive: true });
+

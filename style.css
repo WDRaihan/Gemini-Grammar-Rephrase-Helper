@@ -217,3 +217,209 @@
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
 }
+
+/* ==========================================================================
+   Grammarly-Style Real-Time Inline Badge & Popover
+   ========================================================================== */
+
+#gemini-inline-badge {
+    position: absolute !important;
+    z-index: 2147483640 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 20px !important;
+    padding: 4px 9px !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    color: #475569 !important;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12) !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    line-height: 1 !important;
+    box-sizing: border-box !important;
+    pointer-events: auto !important;
+}
+
+#gemini-inline-badge:hover {
+    transform: scale(1.04) !important;
+    box-shadow: 0 4px 14px rgba(74, 144, 226, 0.25) !important;
+    border-color: #4a90e2 !important;
+}
+
+#gemini-inline-badge.checking {
+    color: #4a90e2 !important;
+    border-color: #93c5fd !important;
+}
+
+#gemini-inline-badge.checking .gemini-badge-icon {
+    animation: geminiPulse 1.2s ease-in-out infinite !important;
+}
+
+#gemini-inline-badge.has-error {
+    background: #eff6ff !important;
+    border-color: #3b82f6 !important;
+    color: #1d4ed8 !important;
+    box-shadow: 0 3px 12px rgba(59, 130, 246, 0.25) !important;
+}
+
+#gemini-inline-badge.has-error .gemini-badge-dot {
+    width: 6px !important;
+    height: 6px !important;
+    border-radius: 50% !important;
+    background-color: #ef4444 !important;
+    display: inline-block !important;
+}
+
+#gemini-inline-badge.clean {
+    color: #059669 !important;
+    border-color: #a7f3d0 !important;
+    background-color: #ecfdf5 !important;
+}
+
+@keyframes geminiPulse {
+    0%, 100% { opacity: 0.5; transform: scale(0.9); }
+    50% { opacity: 1; transform: scale(1.15); }
+}
+
+/* Inline Popover Card */
+#gemini-inline-popover {
+    position: absolute !important;
+    z-index: 2147483645 !important;
+    width: 320px !important;
+    max-width: calc(100vw - 32px) !important;
+    background: #ffffff !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 32px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    color: #1e293b !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    animation: geminiPopoverFade 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    pointer-events: auto !important;
+}
+
+@keyframes geminiPopoverFade {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#gemini-inline-popover .popover-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 14px !important;
+    background-color: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+#gemini-inline-popover .popover-title {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    margin: 0 !important;
+}
+
+#gemini-inline-popover .popover-close {
+    background: none !important;
+    border: none !important;
+    font-size: 16px !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+    color: #64748b !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+}
+
+#gemini-inline-popover .popover-close:hover {
+    background-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+#gemini-inline-popover .popover-body {
+    padding: 14px !important;
+}
+
+#gemini-inline-popover .popover-explanation {
+    font-size: 12px !important;
+    color: #64748b !important;
+    margin: 0 0 10px 0 !important;
+    line-height: 1.4 !important;
+}
+
+#gemini-inline-popover .popover-diff {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    padding: 10px 12px !important;
+    font-size: 13.5px !important;
+    line-height: 1.5 !important;
+    margin-bottom: 14px !important;
+    word-break: break-word !important;
+    max-height: 140px !important;
+    overflow-y: auto !important;
+}
+
+#gemini-inline-popover .popover-diff del {
+    background-color: #fee2e2 !important;
+    color: #991b1b !important;
+    text-decoration: line-through !important;
+    padding: 1px 3px !important;
+    border-radius: 3px !important;
+}
+
+#gemini-inline-popover .popover-diff ins {
+    background-color: #dcfce7 !important;
+    color: #166534 !important;
+    text-decoration: none !important;
+    font-weight: 600 !important;
+    padding: 1px 3px !important;
+    border-radius: 3px !important;
+}
+
+#gemini-inline-popover .popover-actions {
+    display: flex !important;
+    gap: 8px !important;
+}
+
+#gemini-inline-popover .btn-apply-fix {
+    flex: 1 !important;
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    border: none !important;
+    padding: 8px 12px !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: background-color 0.15s ease !important;
+}
+
+#gemini-inline-popover .btn-apply-fix:hover {
+    background-color: #1d4ed8 !important;
+}
+
+#gemini-inline-popover .btn-dismiss-fix {
+    background-color: #f1f5f9 !important;
+    color: #475569 !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 8px 12px !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: background-color 0.15s ease !important;
+}
+
+#gemini-inline-popover .btn-dismiss-fix:hover {
+    background-color: #e2e8f0 !important;
+}
+
