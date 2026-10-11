@@ -1,0 +1,13 @@
+# OS files
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# Extension bundles
+*.zip
+*.crx
+
+# Environment & local secrets
+.env
+.env.local
