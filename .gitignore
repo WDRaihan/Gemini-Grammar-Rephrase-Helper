@@ -4,10 +4,13 @@ Thumbs.db
 *.swp
 *~
 
-# Extension bundles
+# Extension bundles & build output
 *.zip
 *.crx
+dist/
+node_modules/
 
 # Environment & local secrets
 .env
 .env.local
+

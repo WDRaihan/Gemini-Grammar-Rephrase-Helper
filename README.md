@@ -44,6 +44,29 @@ A Chrome Extension (Manifest V3) that uses the Google Gemini API to fix grammar 
 
 You can customize this shortcut at any time by visiting `chrome://extensions/shortcuts` in Chrome.
 
+## 📦 Building & Packaging (Chrome & Firefox)
+
+This repository maintains a single source of truth for both Chrome and Firefox. To build upload-ready packages:
+
+```bash
+# Build both Chrome and Firefox distribution packages
+npm run build
+
+# Build only for Chrome (Chrome Web Store)
+npm run build:chrome
+
+# Build only for Firefox (Mozilla AMO)
+npm run build:firefox
+```
+
+The output packages will be created in `dist/`:
+- `dist/gemini-grammar-rephrase-chrome-v1.2.1.zip` (for Chrome Web Store)
+- `dist/gemini-grammar-rephrase-firefox-v1.2.1.zip` (for Firefox AMO)
+
+For store submission and update guides:
+- [Chrome Web Store Listing Guide](CHROMEWEBSTORE.md)
+- [Firefox AMO Publishing Guide](FIREFOX.md)
+
 ---
 
 ## 🛠️ Tech Stack & Permissions
@@ -57,3 +80,4 @@ You can customize this shortcut at any time by visiting `chrome://extensions/sho
 ## 📄 License
 
 MIT License. See [LICENSE](LICENSE) for details.
+
