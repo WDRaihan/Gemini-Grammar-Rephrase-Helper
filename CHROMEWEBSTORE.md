@@ -8,7 +8,7 @@
 Gemini Grammar & Rephrase Helper
 
 **Short Description** [REQUIRED]
-Select text, right-click, and use the Google Gemini API to fix grammar mistakes and generate instant rephrasings.
+Select text, right-click or press shortcut (Alt+Shift+G) to fix grammar mistakes and generate instant rephrasings with Gemini AI.
 
 **Detailed Description** [REQUIRED]
 Write with confidence! Instantly fix grammar, rephrase sentences, and get multiple writing suggestions with the power of Google's Gemini AI, directly in your browser.
