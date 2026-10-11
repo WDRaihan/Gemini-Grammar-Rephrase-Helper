@@ -171,6 +171,38 @@
             </div>
         </div>
 
+        <div class="form-group" style="margin-top: 20px; padding: 18px 20px; background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border-radius: 10px; border: 1px solid #bfdbfe;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                <label style="margin: 0; font-size: 15px; font-weight: 700; color: #1e3a8a; display: flex; align-items: center; gap: 6px;">
+                    <span>⭐ Pro Membership & Style Presets</span>
+                </label>
+                <span id="pro-badge" style="font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 3px 8px; border-radius: 12px; background-color: #e2e8f0; color: #475569;">
+                    Free Plan
+                </span>
+            </div>
+            <div class="help-text" style="font-size: 13px; color: #334155; margin-bottom: 12px; line-height: 1.4;">
+                Pro unlocks Custom Prompt Presets: <strong>Make Formal</strong>, <strong>Simplify for 5th Grader</strong>, <strong>Convert to Bullet Points</strong>, <strong>Casual Slack Message</strong>, and unlimited <strong>Custom Prompts</strong>.
+            </div>
+
+            <!-- Upgrade Link -->
+            <div id="pro-upgrade-box" style="margin-bottom: 12px;">
+                <a id="buy-pro-btn" href="https://checkout.freemius.com/?plugin_id=41271&pricing_id=98283" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 8px 16px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; border-radius: 6px; font-size: 13px; font-weight: 600; text-decoration: none; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+                    Upgrade to Pro
+                </a>
+            </div>
+
+            <!-- License Activation Input -->
+            <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="fs-license-key" placeholder="Enter your license key (e.g. fs_lic_...)" style="flex: 1; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; box-sizing: border-box;">
+                <button type="button" id="activate-license-btn" class="btn-detect" style="padding: 9px 14px; background-color: #2563eb; color: white; border-color: #2563eb;">Activate</button>
+                <button type="button" id="deactivate-license-btn" class="btn-detect" style="padding: 9px 14px; display: none; background-color: #ef4444; color: white; border-color: #ef4444;">Deactivate</button>
+            </div>
+            
+            <div style="margin-top: 8px; font-size: 12px; color: #64748b;">
+                <span id="license-status-text">Enter your license key to unlock custom prompt presets.</span>
+            </div>
+        </div>
+
         <div class="form-group" style="margin-top: 16px; padding: 14px 16px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
             <label style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">Keyboard Shortcut</label>
             <div class="help-text" style="font-size: 13px; color: #475569; margin: 0; line-height: 1.5;">

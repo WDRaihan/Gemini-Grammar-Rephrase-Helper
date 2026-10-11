@@ -1,4 +1,20 @@
 let geminiLoadingTimer = null;
+let currentModalText = "";
+let currentModalStyle = "default";
+let isProUser = false;
+
+const FREEMIUS_PRODUCT_ID = "41271";
+const FREEMIUS_PRICING_ID = "98283";
+const FREEMIUS_CHECKOUT_URL = `https://checkout.freemius.com/?plugin_id=${FREEMIUS_PRODUCT_ID}&pricing_id=${FREEMIUS_PRICING_ID}`;
+
+const STYLE_PRESETS = [
+  { id: 'default', label: '✦ Default', isPro: false },
+  { id: 'formal', label: 'Make Formal', isPro: true },
+  { id: 'simplify', label: 'Simplify for 5th Grader', isPro: true },
+  { id: 'bullets', label: 'Convert to Bullets', isPro: true },
+  { id: 'slack', label: 'Casual Slack Message', isPro: true },
+  { id: 'custom', label: 'Custom Prompt...', isPro: true }
+];
 
 function clearGeminiLoadingTimer() {
   if (geminiLoadingTimer) {
@@ -6,6 +22,21 @@ function clearGeminiLoadingTimer() {
     geminiLoadingTimer = null;
   }
 }
+
+// Check initial Pro status from storage
+chrome.storage.sync.get(['isPro'], (res) => {
+  if (typeof res?.isPro === 'boolean') {
+    isProUser = res.isPro;
+  }
+});
+
+// Listen for storage changes
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area === 'sync' && changes.isPro) {
+    isProUser = Boolean(changes.isPro.newValue);
+    refreshPresetsBar();
+  }
+});
 
 // Attach listener per active runtime instance
 if (window.__geminiCurrentRuntime !== chrome.runtime) {
@@ -15,6 +46,10 @@ if (window.__geminiCurrentRuntime !== chrome.runtime) {
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === 'SHOW_LOADING') {
       clearGeminiLoadingTimer();
+      currentModalText = request.originalText || currentModalText;
+      currentModalStyle = request.activeStyle || currentModalStyle || 'default';
+      if (typeof request.isPro === 'boolean') isProUser = request.isPro;
+
       showModal('<h3>Loading...</h3><div class="spinner"></div><p>Asking Gemini for suggestions...</p>');
 
       // Safety watchdog: ensure loading spinner never hangs indefinitely
@@ -24,11 +59,14 @@ if (window.__geminiCurrentRuntime !== chrome.runtime) {
 
     } else if (request.type === 'SHOW_RESULT') {
       clearGeminiLoadingTimer();
-      updateModalContent(request.data, request.isError);
+      currentModalText = request.originalText || currentModalText;
+      currentModalStyle = request.activeStyle || currentModalStyle || 'default';
+      if (typeof request.isPro === 'boolean') isProUser = request.isPro;
+
+      updateModalContent(request.data, request.isError, currentModalStyle, isProUser);
     }
   });
 }
-
 
 /**
  * Escapes HTML characters to prevent XSS.
@@ -46,7 +84,7 @@ function escapeHTML(str) {
 }
 
 /**
- * Creates and displays the modal on the page.
+ * Creates and displays the modal on the page with the presets bar.
  * @param {string} contentHTML The initial HTML content to display inside the modal.
  */
 function showModal(contentHTML) {
@@ -64,6 +102,11 @@ function showModal(contentHTML) {
         <h2>Gemini Suggestions</h2>
         <button id="gemini-modal-close-btn" aria-label="Close modal">&times;</button>
       </div>
+      <div id="gemini-modal-presets"></div>
+      <div id="gemini-custom-prompt-container">
+        <input type="text" id="gemini-custom-prompt-input" placeholder="Enter custom style instruction (e.g. Translate to French and sound persuasive)..." />
+        <button id="gemini-custom-prompt-btn">Generate</button>
+      </div>
       <div id="gemini-modal-body">
         ${contentHTML}
       </div>
@@ -74,6 +117,24 @@ function showModal(contentHTML) {
 
   document.getElementById('gemini-modal-close-btn').addEventListener('click', closeModal);
   document.getElementById('gemini-modal-overlay').addEventListener('click', closeModal);
+  
+  const customBtn = document.getElementById('gemini-custom-prompt-btn');
+  const customInput = document.getElementById('gemini-custom-prompt-input');
+  if (customBtn && customInput) {
+    const handleCustomSubmit = () => {
+      const promptVal = customInput.value.trim();
+      if (!promptVal) return;
+      triggerStyleRephrase('custom', promptVal);
+    };
+    customBtn.addEventListener('click', handleCustomSubmit);
+    customInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        handleCustomSubmit();
+      }
+    });
+  }
+
   window.addEventListener('keydown', handleKeyDown);
 }
 
@@ -84,23 +145,265 @@ function handleKeyDown(event) {
 }
 
 /**
+ * Renders the presets toolbar buttons and pro locks.
+ */
+function renderPresetsBar() {
+  const container = document.getElementById('gemini-modal-presets');
+  if (!container) return;
+
+  container.innerHTML = '';
+
+  STYLE_PRESETS.forEach(preset => {
+    const pill = document.createElement('button');
+    pill.type = 'button';
+    pill.className = `gemini-preset-pill ${preset.id === currentModalStyle ? 'active' : ''}`;
+    pill.dataset.presetId = preset.id;
+
+    let lockBadge = '';
+    if (preset.isPro && !isProUser) {
+      lockBadge = '<span class="gemini-pro-tag">🔒 PRO</span>';
+    }
+
+    pill.innerHTML = `${escapeHTML(preset.label)} ${lockBadge}`;
+
+    pill.addEventListener('click', () => {
+      handlePresetClick(preset);
+    });
+
+    container.appendChild(pill);
+  });
+
+  const customContainer = document.getElementById('gemini-custom-prompt-container');
+  if (customContainer) {
+    if (currentModalStyle === 'custom' && isProUser) {
+      customContainer.classList.add('visible');
+    } else {
+      customContainer.classList.remove('visible');
+    }
+  }
+}
+
+function refreshPresetsBar() {
+  renderPresetsBar();
+}
+
+/**
+ * Handles preset clicks, gating Pro features for Free users.
+ * @param {object} preset
+ */
+function handlePresetClick(preset) {
+  if (preset.isPro && !isProUser) {
+    showProUpgradeBanner();
+    return;
+  }
+
+  currentModalStyle = preset.id;
+  renderPresetsBar();
+
+  const customContainer = document.getElementById('gemini-custom-prompt-container');
+  if (preset.id === 'custom') {
+    const customInput = document.getElementById('gemini-custom-prompt-input');
+    if (customContainer && customInput) {
+      customContainer.classList.add('visible');
+      customInput.focus();
+    }
+  } else {
+    if (customContainer) customContainer.classList.remove('visible');
+    triggerStyleRephrase(preset.id);
+  }
+}
+
+/**
+ * Triggers rephrasing with the selected style.
+ * @param {string} styleId
+ * @param {string} customPrompt
+ */
+function triggerStyleRephrase(styleId, customPrompt = '') {
+  if (!currentModalText) return;
+
+  clearGeminiLoadingTimer();
+  const modalBody = document.getElementById('gemini-modal-body');
+  if (modalBody) {
+    modalBody.innerHTML = `
+      <div class="spinner"></div>
+      <p style="color: #475569; font-size: 14px; margin-top: 10px;">
+        Applying style: <strong>${escapeHTML(STYLE_PRESETS.find(p => p.id === styleId)?.label || styleId)}</strong>...
+      </p>
+    `;
+  }
+
+  geminiLoadingTimer = setTimeout(() => {
+    updateModalContent("Request timed out. Please try again.", true);
+  }, 20000);
+
+  chrome.runtime.sendMessage({
+    type: 'REPHRASE_WITH_STYLE',
+    text: currentModalText,
+    style: styleId,
+    customPrompt: customPrompt
+  }, (response) => {
+    if (chrome.runtime.lastError) {
+      clearGeminiLoadingTimer();
+      updateModalContent("Could not contact background service. Please reload the page and try again.", true);
+    }
+  });
+}
+
+/**
+ * Shows the Pro Upgrade banner inside the modal body for free users.
+ */
+function showProUpgradeBanner() {
+  const existingBanner = document.getElementById('gemini-pro-upgrade-banner');
+  if (existingBanner) {
+    existingBanner.scrollIntoView({ behavior: 'smooth' });
+    return;
+  }
+
+  const modalBody = document.getElementById('gemini-modal-body');
+  if (!modalBody) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'gemini-pro-upgrade-banner';
+  banner.innerHTML = `
+    <div class="gemini-pro-banner-header">
+      <h4 class="gemini-pro-banner-title">⭐ Unlock Style Presets with Pro</h4>
+      <button class="gemini-pro-banner-close" aria-label="Close banner">&times;</button>
+    </div>
+    <p class="gemini-pro-banner-desc">
+      Unlock instant style transformations: <strong>Make Formal</strong>, <strong>5th Grader simplicity</strong>, <strong>Bullet Points</strong>, <strong>Slack chat</strong>, and <strong>Custom Prompts</strong>.
+    </p>
+    <ul class="gemini-pro-banner-features">
+      <li>✓ Custom Style Presets</li>
+      <li>✓ Unlimited Custom Prompts</li>
+      <li>✓ Executive & Formal Tone</li>
+      <li>✓ Casual Slack & Chat Mode</li>
+    </ul>
+    <div class="gemini-pro-banner-actions">
+      <a href="${FREEMIUS_CHECKOUT_URL}" target="_blank" rel="noopener noreferrer" class="gemini-btn-buy-pro">
+        Upgrade to Pro
+      </a>
+      <button type="button" class="gemini-btn-activate-link" id="gemini-toggle-key-input">
+        Already purchased? Activate key
+      </button>
+    </div>
+    <div class="gemini-pro-inline-activate" id="gemini-pro-key-row" style="display: none;">
+      <input type="text" id="gemini-banner-license-key" placeholder="Enter your license key (e.g. fs_lic_...)" />
+      <button type="button" id="gemini-banner-activate-btn">Activate</button>
+    </div>
+    <div id="gemini-banner-key-status" style="font-size: 11px; margin-top: 6px; font-weight: 500;"></div>
+  `;
+
+  modalBody.prepend(banner);
+
+  banner.querySelector('.gemini-pro-banner-close').addEventListener('click', () => banner.remove());
+  
+  const toggleBtn = banner.querySelector('#gemini-toggle-key-input');
+  const keyRow = banner.querySelector('#gemini-pro-key-row');
+  const activateBtn = banner.querySelector('#gemini-banner-activate-btn');
+  const keyInput = banner.querySelector('#gemini-banner-license-key');
+  const statusEl = banner.querySelector('#gemini-banner-key-status');
+
+  toggleBtn.addEventListener('click', () => {
+    keyRow.style.display = keyRow.style.display === 'none' ? 'flex' : 'none';
+    if (keyRow.style.display === 'flex') keyInput.focus();
+  });
+
+  activateBtn.addEventListener('click', async () => {
+    const key = keyInput.value.trim();
+    if (!key) {
+      statusEl.style.color = '#dc2626';
+      statusEl.textContent = 'Please enter a license key.';
+      return;
+    }
+
+    statusEl.style.color = '#4338ca';
+    statusEl.textContent = 'Validating license key with Freemius...';
+    activateBtn.disabled = true;
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'ACTIVATE_FS_LICENSE',
+        licenseKey: key
+      });
+
+      if (response?.success) {
+        isProUser = true;
+        statusEl.style.color = '#16a34a';
+        statusEl.textContent = '✓ Pro successfully activated! Enjoy full presets.';
+        setTimeout(() => {
+          banner.remove();
+          renderPresetsBar();
+        }, 1500);
+      } else {
+        statusEl.style.color = '#dc2626';
+        statusEl.textContent = response?.error || 'License activation failed. Please check your key.';
+      }
+    } catch (err) {
+      statusEl.style.color = '#dc2626';
+      statusEl.textContent = 'Could not contact licensing service.';
+    } finally {
+      activateBtn.disabled = false;
+    }
+  });
+}
+
+/**
  * Updates the content of the modal with the API response.
  * @param {string|string[]} data The suggestions or error message.
  * @param {boolean} isError Indicates if the result is an error message.
+ * @param {string} activeStyle Active style preset ID.
+ * @param {boolean} isPro Indicates whether user has Pro license.
  */
-function updateModalContent(data, isError) {
+function updateModalContent(data, isError, activeStyle = 'default', isPro = false) {
   const modalBody = document.getElementById('gemini-modal-body');
   if (!modalBody) return;
+
+  currentModalStyle = activeStyle;
+  isProUser = isPro;
+
+  const presetsContainer = document.getElementById('gemini-modal-presets');
+  const customContainer = document.getElementById('gemini-custom-prompt-container');
 
   let contentHTML = '';
 
   if (isError) {
+    // Hide presets bar and custom prompt row on error
+    if (presetsContainer) presetsContainer.classList.remove('visible');
+    if (customContainer) customContainer.classList.remove('visible');
     contentHTML = `<p class="error-text">${escapeHTML(data)}</p>`;
-  } else if (Array.isArray(data)) {
-    contentHTML = '<div class="suggestion-list">';
+  } else {
+    // Only display style presets when Gemini successfully returns grammar fix results
+    renderPresetsBar();
+    if (presetsContainer) presetsContainer.classList.add('visible');
+    if (customContainer) {
+      if (currentModalStyle === 'custom' && isProUser) {
+        customContainer.classList.add('visible');
+      } else {
+        customContainer.classList.remove('visible');
+      }
+    }
+
+    if (Array.isArray(data)) {
+      contentHTML = '<div class="suggestion-list">';
+    
+    // Choose badge names based on current style
+    const getBadgeLabel = (index) => {
+      if (index === 0) {
+        switch (activeStyle) {
+          case 'formal': return 'Formal Version';
+          case 'simplify': return '5th Grader Simple';
+          case 'bullets': return 'Bullet Points';
+          case 'slack': return 'Casual Slack';
+          case 'custom': return 'Custom Style';
+          default: return 'Grammar Fix';
+        }
+      }
+      return `Variation ${index}`;
+    };
+
     data.forEach((suggestion, index) => {
       const sanitized = escapeHTML(suggestion);
-      const label = index === 0 ? "Grammar Fix" : `Alternative ${index}`;
+      const label = getBadgeLabel(index);
       contentHTML += `
         <div class="suggestion-item">
           <div class="suggestion-content">
@@ -115,8 +418,9 @@ function updateModalContent(data, isError) {
   } else {
     contentHTML = `<p class="suggestion-text">${escapeHTML(data)}</p>`;
   }
+}
 
-  modalBody.innerHTML = contentHTML;
+modalBody.innerHTML = contentHTML;
 
   // Event delegation for copy buttons
   modalBody.addEventListener('click', async (event) => {

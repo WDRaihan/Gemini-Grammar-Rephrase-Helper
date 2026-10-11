@@ -219,6 +219,260 @@
 }
 
 /* ==========================================================================
+   Style Presets Toolbar & Pro Features
+   ========================================================================== */
+
+#gemini-modal-presets {
+    display: none !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding: 10px 16px !important;
+    background-color: #f1f5f9 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    box-sizing: border-box !important;
+    align-items: center !important;
+}
+
+#gemini-modal-presets.visible {
+    display: flex !important;
+}
+
+.gemini-preset-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: #475569 !important;
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 20px !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    white-space: nowrap !important;
+    line-height: 1.2 !important;
+    box-sizing: border-box !important;
+    user-select: none !important;
+}
+
+.gemini-preset-pill:hover {
+    background-color: #f8fafc !important;
+    border-color: #94a3b8 !important;
+    color: #1e293b !important;
+}
+
+.gemini-preset-pill.active {
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3) !important;
+}
+
+.gemini-preset-pill.active .gemini-pro-tag {
+    background-color: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+}
+
+.gemini-pro-tag {
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    padding: 1px 5px !important;
+    border-radius: 4px !important;
+    background-color: #fef3c7 !important;
+    color: #92400e !important;
+    display: inline-block !important;
+    line-height: 1.2 !important;
+}
+
+/* Custom Prompt Input Container */
+#gemini-custom-prompt-container {
+    display: none !important;
+    gap: 8px !important;
+    padding: 10px 16px !important;
+    background-color: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    box-sizing: border-box !important;
+    align-items: center !important;
+}
+
+#gemini-custom-prompt-container.visible {
+    display: flex !important;
+}
+
+#gemini-custom-prompt-input {
+    flex-grow: 1 !important;
+    padding: 7px 12px !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    color: #1e293b !important;
+    background-color: #ffffff !important;
+    box-sizing: border-box !important;
+    outline: none !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+#gemini-custom-prompt-input:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15) !important;
+}
+
+#gemini-custom-prompt-btn {
+    padding: 7px 14px !important;
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: background-color 0.15s ease !important;
+    white-space: nowrap !important;
+}
+
+#gemini-custom-prompt-btn:hover {
+    background-color: #1d4ed8 !important;
+}
+
+/* Pro Upgrade Banner inside Suggestion Popup */
+#gemini-pro-upgrade-banner {
+    background: linear-gradient(135deg, #eff6ff 0%, #fdf4ff 100%) !important;
+    border: 1px solid #c7d2fe !important;
+    border-radius: 8px !important;
+    padding: 14px 16px !important;
+    margin-bottom: 16px !important;
+    text-align: left !important;
+    box-sizing: border-box !important;
+    animation: geminiModalFadeIn 0.2s ease-out !important;
+}
+
+.gemini-pro-banner-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 8px !important;
+}
+
+.gemini-pro-banner-title {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #4338ca !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin: 0 !important;
+}
+
+.gemini-pro-banner-close {
+    background: none !important;
+    border: none !important;
+    font-size: 18px !important;
+    color: #6b7280 !important;
+    cursor: pointer !important;
+    padding: 0 4px !important;
+    line-height: 1 !important;
+}
+
+.gemini-pro-banner-close:hover {
+    color: #1f2937 !important;
+}
+
+.gemini-pro-banner-desc {
+    font-size: 12px !important;
+    color: #475569 !important;
+    margin: 0 0 10px 0 !important;
+    line-height: 1.4 !important;
+}
+
+.gemini-pro-banner-features {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 4px 12px !important;
+    margin: 0 0 12px 0 !important;
+    padding: 0 !important;
+    list-style: none !important;
+    font-size: 11px !important;
+    color: #334155 !important;
+}
+
+.gemini-pro-banner-features li {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+}
+
+.gemini-pro-banner-actions {
+    display: flex !important;
+    gap: 8px !important;
+    align-items: center !important;
+}
+
+.gemini-btn-buy-pro {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 7px 14px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25) !important;
+    transition: opacity 0.15s ease !important;
+}
+
+.gemini-btn-buy-pro:hover {
+    opacity: 0.92 !important;
+}
+
+.gemini-btn-activate-link {
+    font-size: 11px !important;
+    color: #4f46e5 !important;
+    background: none !important;
+    border: none !important;
+    text-decoration: underline !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+}
+
+.gemini-btn-activate-link:hover {
+    color: #3730a3 !important;
+}
+
+.gemini-pro-inline-activate {
+    display: flex !important;
+    gap: 6px !important;
+    margin-top: 8px !important;
+    align-items: center !important;
+}
+
+.gemini-pro-inline-activate input {
+    flex-grow: 1 !important;
+    padding: 5px 8px !important;
+    font-size: 12px !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 4px !important;
+    background: #ffffff !important;
+}
+
+.gemini-pro-inline-activate button {
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+}
+
+/* ==========================================================================
    Grammarly-Style Real-Time Inline Badge & Popover
    ========================================================================== */
 

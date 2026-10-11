@@ -176,9 +176,241 @@ function formatFriendlyErrorMessage(rawError) {
   return cleanMsg.length > 0 ? `Gemini Error: ${cleanMsg}` : "Unable to get suggestions from Gemini. Please try again.";
 }
 
-// Common processor for both Context Menu and Keyboard Shortcut
-async function processFixGrammar(text, tab) {
+const FREEMIUS_PRICING_ID = "98283";
+const DEFAULT_FS_PRODUCT_ID = "41271";
+
+async function getOrCreateDeviceUid() {
+  const local = await chrome.storage.local.get(['fs_device_uid']);
+  if (local.fs_device_uid) {
+    return local.fs_device_uid;
+  }
+  const newUid = crypto.randomUUID().replace(/-/g, '');
+  await chrome.storage.local.set({ fs_device_uid: newUid });
+  return newUid;
+}
+
+async function getProStatus() {
+  const syncData = await chrome.storage.sync.get(['isPro', 'fs_license_key', 'fs_plan_name', 'fs_product_id', 'fs_install_id']);
+  return {
+    isPro: syncData.isPro === true,
+    licenseKey: syncData.fs_license_key || '',
+    planName: syncData.fs_plan_name || 'Free',
+    productId: syncData.fs_product_id || DEFAULT_FS_PRODUCT_ID,
+    installId: syncData.fs_install_id || ''
+  };
+}
+
+async function activateFreemiusLicense(licenseKey, userProductId) {
+  if (!licenseKey) throw new Error("License key is required.");
+
+  const uid = await getOrCreateDeviceUid();
+  const productId = userProductId || (await chrome.storage.sync.get(['fs_product_id'])).fs_product_id || DEFAULT_FS_PRODUCT_ID;
+
+  const activateUrl = `https://api.freemius.com/v1/products/${encodeURIComponent(productId)}/licenses/activate.json`;
+
+  const response = await fetch(activateUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      uid: uid,
+      license_key: licenseKey.trim(),
+      title: "Chrome Extension (WebExtension)"
+    })
+  });
+
+  if (!response.ok) {
+    let errDetail = `Activation failed (HTTP ${response.status})`;
+    try {
+      const errJson = await response.json();
+      if (errJson.error?.message) errDetail = errJson.error.message;
+    } catch (_) {}
+    throw new Error(errDetail);
+  }
+
+  const data = await response.json();
+
+  await chrome.storage.sync.set({
+    isPro: true,
+    fs_license_key: licenseKey.trim(),
+    fs_install_id: data.install_id || '',
+    fs_install_token: data.install_api_token || '',
+    fs_plan_name: data.license_plan_name || 'Pro',
+    fs_plan_id: data.license_plan_id || '',
+    fs_product_id: productId
+  });
+
+  return {
+    success: true,
+    planName: data.license_plan_name || 'Pro',
+    installId: data.install_id
+  };
+}
+
+async function deactivateFreemiusLicense() {
+  const data = await chrome.storage.sync.get(['fs_license_key', 'fs_install_id', 'fs_product_id']);
+  const uid = await getOrCreateDeviceUid();
+  const productId = data.fs_product_id || DEFAULT_FS_PRODUCT_ID;
+
+  if (data.fs_install_id && data.fs_license_key) {
+    try {
+      await fetch(`https://api.freemius.com/v1/products/${encodeURIComponent(productId)}/licenses/deactivate.json?fields=id%2Cname%2Cslug`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          uid: uid,
+          install_id: data.fs_install_id,
+          license_key: data.fs_license_key
+        })
+      });
+    } catch (_) {}
+  }
+
+  await chrome.storage.sync.set({
+    isPro: false,
+    fs_license_key: '',
+    fs_install_id: '',
+    fs_install_token: '',
+    fs_plan_name: 'Free'
+  });
+
+  return { success: true };
+}
+
+function buildPromptForStyle(text, style = 'default', customPrompt = '') {
+  switch (style) {
+    case 'formal':
+      return `You are an executive communication assistant. Rewrite the following text in an executive, formal, and polished professional tone suitable for high-level business correspondence. Fix all grammar and elevate vocabulary.
+Provide:
+1. One direct formal version that preserves original phrasing but elevates tone and ensures correctness.
+2. Two distinct formal variations.
+
+Return a valid JSON object matching this exact schema:
+{
+  "grammar_fix": "direct formal version",
+  "rephrases": [
+    "first formal alternative",
+    "second formal alternative"
+  ]
+}
+
+Original text:
+${JSON.stringify(text)}`;
+
+    case 'simplify':
+      return `You are a plain-language writing assistant. Rewrite the following text so that an elementary school student (5th grader) can effortlessly understand it. Use simple, direct words, short sentences, and avoid jargon while preserving the core meaning.
+Provide:
+1. One direct simple version.
+2. Two alternative simple variations.
+
+Return a valid JSON object matching this exact schema:
+{
+  "grammar_fix": "direct simplified 5th grader version",
+  "rephrases": [
+    "first alternative simplified version",
+    "second alternative simplified version"
+  ]
+}
+
+Original text:
+${JSON.stringify(text)}`;
+
+    case 'bullets':
+      return `You are a concise information architect. Convert the key ideas and points from the following text into clear, readable, and structured bullet points (use • symbol).
+Provide:
+1. One structured bullet-point version.
+2. Two alternative bullet-point variations (one concise, one detailed).
+
+Return a valid JSON object matching this exact schema:
+{
+  "grammar_fix": "bullet point summary version",
+  "rephrases": [
+    "concise bullet points version",
+    "actionable bullet points version"
+  ]
+}
+
+Original text:
+${JSON.stringify(text)}`;
+
+    case 'slack':
+      return `You are a modern workplace communication assistant. Rewrite the following text as a casual, warm, and natural workplace chat message (ideal for Slack, Teams, or Discord). It should sound friendly, concise, and approachable while remaining polite and professional.
+Provide:
+1. One natural casual chat version.
+2. Two alternative casual variations.
+
+Return a valid JSON object matching this exact schema:
+{
+  "grammar_fix": "casual workplace chat version",
+  "rephrases": [
+    "first casual chat variation",
+    "second casual chat variation"
+  ]
+}
+
+Original text:
+${JSON.stringify(text)}`;
+
+    case 'custom':
+      const instruction = customPrompt.trim() || "Improve clarity and style";
+      return `You are an expert AI writing assistant. Transform the following text strictly according to this custom instruction:
+"${instruction}"
+
+Provide:
+1. Primary version fulfilling the custom instruction.
+2. Two creative variations that also fulfill the instruction in slightly different ways.
+
+Return a valid JSON object matching this exact schema:
+{
+  "grammar_fix": "primary version meeting instruction",
+  "rephrases": [
+    "first variation meeting instruction",
+    "second variation meeting instruction"
+  ]
+}
+
+Original text:
+${JSON.stringify(text)}`;
+
+    default:
+      return `You are a writing assistant. For the following text, provide:
+1. One version that ONLY corrects grammar, spelling, and punctuation mistakes without changing the style.
+2. Two separate versions rephrased for better clarity, tone, and flow.
+
+Return a valid JSON object matching this exact schema:
+{
+  "grammar_fix": "text with only grammar and spelling corrected",
+  "rephrases": [
+    "first rephrased version",
+    "second rephrased version"
+  ]
+}
+
+Original text:
+${JSON.stringify(text)}`;
+  }
+}
+
+// Common processor for both Context Menu, Shortcut, and Style Selection
+async function processFixGrammar(text, tab, style = 'default', customPrompt = '') {
   if (!text || !tab?.id || isRestrictedUrl(tab.url)) {
+    return;
+  }
+
+  const proInfo = await getProStatus();
+  const isPro = proInfo.isPro;
+
+  // Gate pro styles
+  if (style !== 'default' && !isPro) {
+    try {
+      await chrome.tabs.sendMessage(tab.id, {
+        type: 'SHOW_RESULT',
+        data: "Style presets and custom prompts are Pro features. Please upgrade to Pro to unlock them.",
+        isError: true,
+        originalText: text,
+        activeStyle: style,
+        isPro: false
+      });
+    } catch (_) {}
     return;
   }
 
@@ -196,32 +428,29 @@ async function processFixGrammar(text, tab) {
     // 3. Handle missing API key
     if (!apiKey) {
       const errorMessage = "Gemini API key not found. Please set your API key in the extension's options page.";
-      await chrome.tabs.sendMessage(tab.id, { type: 'SHOW_RESULT', data: errorMessage, isError: true }).catch(() => {});
+      await chrome.tabs.sendMessage(tab.id, {
+        type: 'SHOW_RESULT',
+        data: errorMessage,
+        isError: true,
+        originalText: text,
+        activeStyle: style,
+        isPro
+      }).catch(() => {});
       chrome.runtime.openOptionsPage();
       return;
     }
 
-    // 4. Show loading modal
-    await chrome.tabs.sendMessage(tab.id, { type: 'SHOW_LOADING' }).catch(() => {});
+    // 4. Show loading modal with current style context
+    await chrome.tabs.sendMessage(tab.id, {
+      type: 'SHOW_LOADING',
+      originalText: text,
+      activeStyle: style,
+      isPro
+    }).catch(() => {});
 
     // 5. Make the API call to Gemini with timeout protection
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-
-    const promptText = `You are a writing assistant. For the following text, provide:
-1. One version that ONLY corrects grammar, spelling, and punctuation mistakes without changing the style.
-2. Two separate versions rephrased for better clarity, tone, and flow.
-
-Return a valid JSON object matching this exact schema:
-{
-  "grammar_fix": "text with only grammar and spelling corrected",
-  "rephrases": [
-    "first rephrased version",
-    "second rephrased version"
-  ]
-}
-
-Original text:
-${JSON.stringify(text)}`;
+    const promptText = buildPromptForStyle(text, style, customPrompt);
 
     const payload = {
       contents: [{
@@ -312,21 +541,35 @@ ${JSON.stringify(text)}`;
       throw new Error("No suggestions were returned by the model.");
     }
 
-    // 6. Send suggestions to content script
-    await chrome.tabs.sendMessage(tab.id, { type: 'SHOW_RESULT', data: suggestions, isError: false }).catch(() => {});
+    // 6. Send suggestions to content script with style context
+    await chrome.tabs.sendMessage(tab.id, {
+      type: 'SHOW_RESULT',
+      data: suggestions,
+      isError: false,
+      originalText: text,
+      activeStyle: style,
+      isPro
+    }).catch(() => {});
 
   } catch (error) {
     console.error("Error during Gemini request:", error);
     try {
       const friendlyMessage = formatFriendlyErrorMessage(error.message);
-      await chrome.tabs.sendMessage(tab.id, { type: 'SHOW_RESULT', data: friendlyMessage, isError: true }).catch(() => {});
+      await chrome.tabs.sendMessage(tab.id, {
+        type: 'SHOW_RESULT',
+        data: friendlyMessage,
+        isError: true,
+        originalText: text,
+        activeStyle: style,
+        isPro
+      }).catch(() => {});
     } catch (sendError) {
       console.error("Could not send error message to content script:", sendError);
     }
   }
 }
 
-// 3. Message handler for real-time auto-check from content script
+// 3. Message handler for real-time auto-check, styles, and licensing
 const autoCheckCache = new Map();
 const MAX_CACHE_SIZE = 100;
 
@@ -336,6 +579,39 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .then(res => sendResponse({ success: true, ...res }))
       .catch(err => sendResponse({ success: false, error: err.message }));
     return true; // Keep channel open for async response
+  }
+
+  if (request.type === 'REPHRASE_WITH_STYLE') {
+    const targetTab = sender.tab;
+    if (targetTab) {
+      processFixGrammar(request.text, targetTab, request.style, request.customPrompt)
+        .then(() => sendResponse({ success: true }))
+        .catch(err => sendResponse({ success: false, error: err.message }));
+      return true;
+    }
+    sendResponse({ success: false, error: "No active tab found" });
+    return false;
+  }
+
+  if (request.type === 'ACTIVATE_FS_LICENSE') {
+    activateFreemiusLicense(request.licenseKey, request.productId)
+      .then(res => sendResponse({ success: true, ...res }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+
+  if (request.type === 'DEACTIVATE_FS_LICENSE') {
+    deactivateFreemiusLicense()
+      .then(res => sendResponse({ success: true, ...res }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+
+  if (request.type === 'GET_PRO_STATUS') {
+    getProStatus()
+      .then(res => sendResponse({ success: true, ...res }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
   }
 });
 

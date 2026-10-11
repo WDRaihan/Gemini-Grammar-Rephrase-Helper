@@ -237,7 +237,109 @@ async function testConnection() {
   }
 }
 
-document.addEventListener('DOMContentLoaded', loadOptions);
+// Pro & Freemius licensing UI controls
+const proBadge = document.getElementById('pro-badge');
+const proUpgradeBox = document.getElementById('pro-upgrade-box');
+const fsLicenseInput = document.getElementById('fs-license-key');
+const activateLicenseBtn = document.getElementById('activate-license-btn');
+const deactivateLicenseBtn = document.getElementById('deactivate-license-btn');
+const licenseStatusText = document.getElementById('license-status-text');
+
+function loadProSettings() {
+  chrome.storage.sync.get(['isPro', 'fs_license_key', 'fs_plan_name'], (result) => {
+    const isPro = result.isPro === true;
+
+    if (isPro) {
+      if (proBadge) {
+        proBadge.textContent = `${result.fs_plan_name || 'Pro'} Active ✓`;
+        proBadge.style.backgroundColor = '#dcfce7';
+        proBadge.style.color = '#15803d';
+      }
+      if (proUpgradeBox) proUpgradeBox.style.display = 'none';
+      if (fsLicenseInput) {
+        fsLicenseInput.value = result.fs_license_key || 'Activated';
+        fsLicenseInput.disabled = true;
+      }
+      if (activateLicenseBtn) activateLicenseBtn.style.display = 'none';
+      if (deactivateLicenseBtn) deactivateLicenseBtn.style.display = 'inline-block';
+      if (licenseStatusText) {
+        licenseStatusText.textContent = `Your ${result.fs_plan_name || 'Pro'} membership is active. Enjoy all style presets!`;
+      }
+    } else {
+      if (proBadge) {
+        proBadge.textContent = 'Free Plan';
+        proBadge.style.backgroundColor = '#e2e8f0';
+        proBadge.style.color = '#475569';
+      }
+      if (proUpgradeBox) proUpgradeBox.style.display = 'block';
+      if (fsLicenseInput) {
+        fsLicenseInput.value = '';
+        fsLicenseInput.disabled = false;
+      }
+      if (activateLicenseBtn) activateLicenseBtn.style.display = 'inline-block';
+      if (deactivateLicenseBtn) deactivateLicenseBtn.style.display = 'none';
+      if (licenseStatusText) {
+        licenseStatusText.textContent = 'Enter your license key above to unlock all styles and custom prompts.';
+      }
+    }
+  });
+}
+
+if (activateLicenseBtn) {
+  activateLicenseBtn.addEventListener('click', async () => {
+    const key = fsLicenseInput.value.trim();
+    if (!key) {
+      showStatus('Please enter a license key to activate.', '#dc3545');
+      return;
+    }
+
+    activateLicenseBtn.disabled = true;
+    showStatus('Activating license...', '#4a90e2', 0);
+
+    try {
+      const response = await chrome.runtime.sendMessage({
+        type: 'ACTIVATE_FS_LICENSE',
+        licenseKey: key
+      });
+
+      if (response?.success) {
+        showStatus(`Pro successfully activated! Plan: ${response.planName || 'Pro'}`, '#28a745', 6000);
+        loadProSettings();
+      } else {
+        showStatus(`Activation error: ${response?.error || 'Invalid key.'}`, '#dc3545', 8000);
+      }
+    } catch (err) {
+      showStatus(`Activation failed: ${err.message}`, '#dc3545', 7000);
+    } finally {
+      activateLicenseBtn.disabled = false;
+    }
+  });
+}
+
+if (deactivateLicenseBtn) {
+  deactivateLicenseBtn.addEventListener('click', async () => {
+    if (!confirm('Are you sure you want to deactivate your Pro license on this browser?')) return;
+
+    deactivateLicenseBtn.disabled = true;
+    showStatus('Deactivating license...', '#4a90e2', 0);
+
+    try {
+      await chrome.runtime.sendMessage({ type: 'DEACTIVATE_FS_LICENSE' });
+      showStatus('License deactivated successfully.', '#28a745', 5000);
+      loadProSettings();
+    } catch (err) {
+      showStatus(`Deactivation error: ${err.message}`, '#dc3545', 7000);
+    } finally {
+      deactivateLicenseBtn.disabled = false;
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  loadOptions();
+  loadProSettings();
+});
+
 saveButton.addEventListener('click', saveOptions);
 testButton.addEventListener('click', testConnection);
 detectButton.addEventListener('click', () => fetchAvailableModels(true));
