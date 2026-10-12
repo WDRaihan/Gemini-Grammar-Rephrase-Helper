@@ -546,6 +546,38 @@ const activateLicenseBtn = document.getElementById('activate-license-btn');
 const deactivateLicenseBtn = document.getElementById('deactivate-license-btn');
 const licenseStatusText = document.getElementById('license-status-text');
 
+function showLicenseStatus(text, type = 'normal') {
+  if (!licenseStatusText) return;
+  licenseStatusText.textContent = text;
+
+  if (type === 'error') {
+    licenseStatusText.style.color = '#dc2626';
+    licenseStatusText.style.fontWeight = '500';
+    if (fsLicenseInput) fsLicenseInput.style.borderColor = '#ef4444';
+  } else if (type === 'success') {
+    licenseStatusText.style.color = '#16a34a';
+    licenseStatusText.style.fontWeight = '600';
+    if (fsLicenseInput) fsLicenseInput.style.borderColor = '';
+  } else if (type === 'loading') {
+    licenseStatusText.style.color = '#2563eb';
+    licenseStatusText.style.fontWeight = '500';
+    if (fsLicenseInput) fsLicenseInput.style.borderColor = '';
+  } else {
+    licenseStatusText.style.color = '#64748b';
+    licenseStatusText.style.fontWeight = 'normal';
+    if (fsLicenseInput) fsLicenseInput.style.borderColor = '';
+  }
+}
+
+if (fsLicenseInput) {
+  fsLicenseInput.addEventListener('input', () => {
+    fsLicenseInput.style.borderColor = '';
+    if (licenseStatusText && licenseStatusText.style.color === 'rgb(220, 38, 38)') {
+      showLicenseStatus('Enter your license key above to unlock all styles and custom prompts.', 'normal');
+    }
+  });
+}
+
 function loadProSettings() {
   chrome.storage.sync.get(['isPro', 'fs_license_key', 'fs_plan_name'], (result) => {
     const isPro = result.isPro === true;
@@ -576,9 +608,7 @@ function loadProSettings() {
       }
       if (activateLicenseBtn) activateLicenseBtn.style.display = 'none';
       if (deactivateLicenseBtn) deactivateLicenseBtn.style.display = 'inline-block';
-      if (licenseStatusText) {
-        licenseStatusText.textContent = `Your ${result.fs_plan_name || 'Pro'} membership is active. Enjoy all style presets!`;
-      }
+      showLicenseStatus(`Your ${result.fs_plan_name || 'Pro'} membership is active. Enjoy all style presets!`, 'success');
     } else {
       if (proBadge) {
         proBadge.textContent = 'Free Plan';
@@ -592,8 +622,8 @@ function loadProSettings() {
       }
       if (activateLicenseBtn) activateLicenseBtn.style.display = 'inline-block';
       if (deactivateLicenseBtn) deactivateLicenseBtn.style.display = 'none';
-      if (licenseStatusText) {
-        licenseStatusText.textContent = 'Enter your license key above to unlock all styles and custom prompts.';
+      if (!licenseStatusText || !licenseStatusText.textContent.startsWith('⚠️')) {
+        showLicenseStatus('Enter your license key above to unlock all styles and custom prompts.', 'normal');
       }
     }
   });
@@ -603,12 +633,13 @@ if (activateLicenseBtn) {
   activateLicenseBtn.addEventListener('click', async () => {
     const key = fsLicenseInput.value.trim();
     if (!key) {
-      showStatus('Please enter a license key to activate.', '#dc3545');
+      showLicenseStatus('⚠️ Please enter a license key to activate.', 'error');
+      fsLicenseInput.focus();
       return;
     }
 
     activateLicenseBtn.disabled = true;
-    showStatus('Activating license...', '#4a90e2', 0);
+    showLicenseStatus('Activating license with Freemius...', 'loading');
 
     try {
       const response = await chrome.runtime.sendMessage({
@@ -617,13 +648,13 @@ if (activateLicenseBtn) {
       });
 
       if (response?.success) {
-        showStatus(`Pro successfully activated! Plan: ${response.planName || 'Pro'}`, '#28a745', 6000);
+        showLicenseStatus(`✓ Pro successfully activated! Plan: ${response.planName || 'Pro'}`, 'success');
         loadProSettings();
       } else {
-        showStatus(`Activation error: ${response?.error || 'Invalid key.'}`, '#dc3545', 8000);
+        showLicenseStatus(`⚠️ Activation error: ${response?.error || 'Invalid key.'}`, 'error');
       }
     } catch (err) {
-      showStatus(`Activation failed: ${err.message}`, '#dc3545', 7000);
+      showLicenseStatus(`⚠️ Activation failed: ${err.message}`, 'error');
     } finally {
       activateLicenseBtn.disabled = false;
     }
@@ -635,14 +666,14 @@ if (deactivateLicenseBtn) {
     if (!confirm('Are you sure you want to deactivate your Pro license on this browser?')) return;
 
     deactivateLicenseBtn.disabled = true;
-    showStatus('Deactivating license...', '#4a90e2', 0);
+    showLicenseStatus('Deactivating license...', 'loading');
 
     try {
       await chrome.runtime.sendMessage({ type: 'DEACTIVATE_FS_LICENSE' });
-      showStatus('License deactivated successfully.', '#28a745', 5000);
+      showLicenseStatus('License deactivated successfully.', 'normal');
       loadProSettings();
     } catch (err) {
-      showStatus(`Deactivation error: ${err.message}`, '#dc3545', 7000);
+      showLicenseStatus(`⚠️ Deactivation error: ${err.message}`, 'error');
     } finally {
       deactivateLicenseBtn.disabled = false;
     }

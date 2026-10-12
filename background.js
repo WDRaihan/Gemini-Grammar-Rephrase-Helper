@@ -190,12 +190,20 @@ const FREEMIUS_PRICING_ID = "98283";
 const DEFAULT_FS_PRODUCT_ID = "41271";
 
 async function getOrCreateDeviceUid() {
+  const sync = await chrome.storage.sync.get(['fs_device_uid']);
+  if (sync.fs_device_uid) {
+    return sync.fs_device_uid;
+  }
   const local = await chrome.storage.local.get(['fs_device_uid']);
   if (local.fs_device_uid) {
+    await chrome.storage.sync.set({ fs_device_uid: local.fs_device_uid });
     return local.fs_device_uid;
   }
   const newUid = crypto.randomUUID().replace(/-/g, '');
-  await chrome.storage.local.set({ fs_device_uid: newUid });
+  await Promise.all([
+    chrome.storage.sync.set({ fs_device_uid: newUid }),
+    chrome.storage.local.set({ fs_device_uid: newUid })
+  ]);
   return newUid;
 }
 
@@ -232,7 +240,11 @@ async function activateFreemiusLicense(licenseKey, userProductId) {
     let errDetail = `Activation failed (HTTP ${response.status})`;
     try {
       const errJson = await response.json();
-      if (errJson.error?.message) errDetail = errJson.error.message;
+      if (errJson.error?.code === 'license_utilized' || /quota/i.test(errJson.error?.message || '')) {
+        errDetail = "License quota reached (1 active device limit). Please release previous install at users.freemius.com or click Deactivate before uninstalling.";
+      } else if (errJson.error?.message) {
+        errDetail = errJson.error.message;
+      }
     } catch (_) {}
     throw new Error(errDetail);
   }
