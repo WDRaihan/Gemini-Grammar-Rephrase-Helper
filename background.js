@@ -33,6 +33,13 @@ async function setupContextMenu() {
 chrome.runtime.onInstalled.addListener(setupContextMenu);
 chrome.runtime.onStartup.addListener(setupContextMenu);
 
+// Open options page when user clicks the extension toolbar icon
+if (chrome.action?.onClicked) {
+  chrome.action.onClicked.addListener(() => {
+    chrome.runtime.openOptionsPage();
+  });
+}
+
 // Helper to check if a URL is restricted from extension scripting
 function isRestrictedUrl(url) {
   return !url || url.startsWith("chrome://") || url.startsWith("edge://") || url.startsWith("about:") || url.includes("chromewebstore.google.com");

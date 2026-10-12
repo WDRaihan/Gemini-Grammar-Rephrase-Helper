@@ -15,6 +15,18 @@
   "background": {
     "service_worker": "background.js"
   },
+  "action": {
+    "default_icon": {
+      "16": "images/icon16.png",
+      "48": "images/icon48.png",
+      "128": "images/icon128.png"
+    },
+    "default_title": "Gemini Grammar & Rephrase Helper - Open Settings"
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": true
+  },
   "options_page": "options.html",
   "icons": {
     "16": "images/icon16.png",
