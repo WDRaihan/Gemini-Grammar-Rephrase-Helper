@@ -31,9 +31,11 @@ function updateSubSettingsState(enabled) {
   if (enabled) {
     autoCheckSubSettings.style.opacity = '1';
     autoCheckSubSettings.style.pointerEvents = 'auto';
+    if (debounceSelect) debounceSelect.disabled = false;
   } else {
     autoCheckSubSettings.style.opacity = '0.5';
     autoCheckSubSettings.style.pointerEvents = 'none';
+    if (debounceSelect) debounceSelect.disabled = true;
   }
 }
 
@@ -91,11 +93,13 @@ function ensureOptionExists(modelValue) {
 // Display status message with color
 function showStatus(text, color = '#28a745', timeoutMs = 5000) {
   statusDiv.textContent = text;
+  statusDiv.title = text;
   statusDiv.style.color = color;
   if (timeoutMs > 0) {
     setTimeout(() => {
       if (statusDiv.textContent === text) {
         statusDiv.textContent = '';
+        statusDiv.title = '';
       }
     }, timeoutMs);
   }
@@ -122,7 +126,7 @@ function saveOptions() {
     autoCheckDebounce: autoCheckDebounce,
     maxOutputTokens: maxOutputTokens
   }, () => {
-    showStatus('Settings saved successfully! Token & performance preferences applied.', '#28a745');
+    showStatus('Settings saved successfully!', '#28a745');
   });
 }
 
@@ -243,17 +247,34 @@ function formatFriendlyErrorMessage(rawError, modelName = '') {
   return cleanMsg;
 }
 
+// Display test status message next to test button inside card
+function showTestStatus(text, color = '#28a745', timeoutMs = 7000) {
+  const el = document.getElementById('test-status');
+  if (!el) return;
+  el.textContent = text;
+  el.title = text;
+  el.style.color = color;
+  if (timeoutMs > 0) {
+    setTimeout(() => {
+      if (el.textContent === text) {
+        el.textContent = '';
+        el.title = '';
+      }
+    }, timeoutMs);
+  }
+}
+
 // Test connection with Google Gemini API
 async function testConnection() {
   const apiKey = apiKeyInput.value.trim();
   let model = modelSelect.value;
 
   if (!apiKey) {
-    showStatus('Please enter an API key first.', '#dc3545');
+    showTestStatus('Please enter an API key first.', '#dc3545');
     return;
   }
 
-  showStatus('Testing connection to Gemini...', '#4a90e2', 0);
+  showTestStatus('Testing connection to Gemini...', '#4a90e2', 0);
   testButton.disabled = true;
 
   try {
@@ -270,7 +291,7 @@ async function testConnection() {
     });
 
     if (response.ok) {
-      showStatus(`Connection successful! (${model} is active)`, '#28a745', 5000);
+      showTestStatus(`Connection successful! (${model} is active)`, '#28a745', 6000);
     } else {
       let errorMsg = `HTTP ${response.status}`;
       try {
@@ -281,10 +302,10 @@ async function testConnection() {
       } catch (_) {}
 
       const friendly = formatFriendlyErrorMessage(errorMsg, model);
-      showStatus(`Test failed: ${friendly}`, '#dc3545', 9000);
+      showTestStatus(`Test failed: ${friendly}`, '#dc3545', 9000);
     }
   } catch (err) {
-    showStatus(`Network error: ${err.message}`, '#dc3545', 7000);
+    showTestStatus(`Network error: ${err.message}`, '#dc3545', 7000);
   } finally {
     testButton.disabled = false;
   }
@@ -388,7 +409,28 @@ if (deactivateLicenseBtn) {
   });
 }
 
+// Tab Switching Navigation
+function initTabs() {
+  const tabButtons = document.querySelectorAll('.tab-btn');
+  const tabPanels = document.querySelectorAll('.tab-panel');
+
+  tabButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const target = btn.dataset.tab;
+      tabButtons.forEach(b => b.classList.remove('active'));
+      tabPanels.forEach(p => p.classList.remove('active'));
+
+      btn.classList.add('active');
+      const targetPanel = document.getElementById(`tab-${target}`);
+      if (targetPanel) {
+        targetPanel.classList.add('active');
+      }
+    });
+  });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
+  initTabs();
   loadOptions();
   loadProSettings();
 });

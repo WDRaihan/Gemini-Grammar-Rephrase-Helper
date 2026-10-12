@@ -3,11 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gemini Helper Settings</title>
+    <title>Gemini Grammar & Rephrase Helper - Settings</title>
     <style>
         :root {
             --primary: #2563eb;
             --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
             --bg-page: #f8fafc;
             --card-bg: #ffffff;
             --border-color: #e2e8f0;
@@ -17,6 +18,7 @@
             --success: #16a34a;
             --warning: #d97706;
             --danger: #dc2626;
+            --radius-sm: 6px;
             --radius-md: 10px;
             --radius-lg: 14px;
         }
@@ -26,62 +28,361 @@
             background-color: var(--bg-page);
             color: var(--text-main);
             margin: 0;
-            padding: 30px 20px 60px;
+            padding: 0 0 60px 0;
+            min-height: 100vh;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Sticky Header */
+        .sticky-header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            width: 100%;
+            background: rgba(248, 250, 252, 0.94);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             justify-content: center;
-            align-items: flex-start;
-            min-height: 100vh;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+        }
+
+        .header-inner {
+            width: 100%;
+            max-width: 760px;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
             box-sizing: border-box;
         }
 
-        .container {
-            width: 100%;
-            max-width: 620px;
+        .header-brand {
             display: flex;
-            flex-direction: column;
-            gap: 20px;
+            align-items: center;
+            gap: 12px;
         }
 
-        /* Header */
-        .page-header {
-            text-align: center;
-            margin-bottom: 6px;
+        .brand-icon-img {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            flex-shrink: 0;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            object-fit: contain;
         }
 
-        .header-badge {
+        .brand-text h1 {
+            font-size: 16.5px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0;
+            line-height: 1.25;
+            letter-spacing: -0.25px;
+        }
+
+        .brand-text span {
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .header-badge-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .version-badge {
+            font-size: 11.5px;
+            font-weight: 600;
+            color: #64748b;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            padding: 3px 10px;
+            border-radius: 12px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+            letter-spacing: 0.2px;
+        }
+
+        /* Save Action Bar below Shortcut Box and above Tabs */
+        .save-action-bar {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 12px;
+        }
+
+        .save-settings-btn {
+            padding: 9px 22px;
+            border-radius: var(--radius-md);
+            font-size: 13.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: 1px solid transparent;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 4px 12px;
-            background-color: #eff6ff;
-            color: var(--primary);
+            white-space: nowrap;
+            background-color: var(--primary);
+            color: white;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+        }
+
+        .save-settings-btn:hover {
+            background-color: var(--primary-hover);
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .save-settings-btn:active {
+            transform: translateY(0);
+        }
+
+        .save-settings-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+
+        /* Status Toast next to Save Button */
+        #status {
+            font-size: 13px;
+            font-weight: 600;
+            min-height: 18px;
+            line-height: 1.4;
+            max-width: 380px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: right;
+            transition: opacity 0.2s;
+        }
+
+        /* Page Layout */
+        .container {
+            width: 100%;
+            max-width: 760px;
+            padding: 20px 20px 0;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* Shortcut Notice Banner below Header */
+        .shortcut-banner {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-md);
+            padding: 10px 16px;
+            gap: 12px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+        }
+
+        .shortcut-banner-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .shortcut-badge {
+            font-size: 11px;
+            font-weight: 700;
+            color: #334155;
+            background-color: #ffffff;
+            border: 1px solid #cbd5e1;
+            padding: 2.5px 8px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            white-space: nowrap;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+        }
+
+        .shortcut-desc {
+            font-size: 12.5px;
+            color: #475569;
+            line-height: 1.45;
+        }
+
+        .shortcut-desc kbd {
+            display: inline-block;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 4px;
+            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.08);
+            font-family: inherit;
+            font-size: 11px;
+            font-weight: 700;
+            color: #1e293b;
+            padding: 1.5px 6px;
+            margin: 0 1px;
+        }
+
+        .shortcut-mac-note {
+            color: #64748b;
+        }
+
+        .shortcut-action {
             font-size: 12px;
             font-weight: 600;
-            border-radius: 20px;
-            margin-bottom: 8px;
-            border: 1px solid #bfdbfe;
+            color: var(--primary);
+            text-decoration: none;
+            white-space: nowrap;
+            padding: 5px 11px;
+            border-radius: 6px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            transition: all 0.15s;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
         }
 
-        .page-header h1 {
-            color: var(--text-main);
-            font-size: 24px;
-            font-weight: 700;
-            margin: 0 0 6px 0;
-            letter-spacing: -0.3px;
+        .shortcut-action:hover {
+            border-color: var(--primary);
+            background: #eff6ff;
+            color: var(--primary-hover);
         }
 
-        .page-header p {
+        /* Tabs Navigation Bar (Full Width) */
+        .tabs-nav {
+            display: flex;
+            width: 100%;
+            box-sizing: border-box;
+            gap: 6px;
+            background-color: #e2e8f0;
+            padding: 4px;
+            border-radius: var(--radius-md);
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .tabs-nav::-webkit-scrollbar {
+            display: none;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 9px 12px;
+            border: none;
+            background: transparent;
             color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            white-space: nowrap;
+        }
+
+        .tab-btn:hover {
+            color: var(--text-main);
+        }
+
+        .tab-btn.active {
+            background-color: #ffffff;
+            color: var(--primary);
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+        }
+
+        .tab-btn .tab-icon {
             font-size: 14px;
-            margin: 0;
+        }
+
+        /* Test API Connection Row inside Configuration Card */
+        .api-test-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 18px;
+            padding-top: 14px;
+            border-top: 1px solid #f1f5f9;
+            flex-wrap: wrap;
+        }
+
+        .btn-test-connection {
+            padding: 8px 16px;
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            border: 1px solid #cbd5e1;
+            background-color: #ffffff;
+            color: var(--text-sub);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            white-space: nowrap;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+        }
+
+        .btn-test-connection:hover {
+            background-color: #f8fafc;
+            border-color: #94a3b8;
+            color: var(--text-main);
+        }
+
+        .btn-test-connection:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .test-status-msg {
+            font-size: 12.5px;
+            font-weight: 600;
+            line-height: 1.4;
+            min-height: 18px;
+            flex: 1;
+        }
+
+        /* Tab Content Panels */
+        .tab-panel {
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+            animation: panelFadeIn 0.18s ease-out;
+        }
+
+        .tab-panel.active {
+            display: flex;
+        }
+
+        @keyframes panelFadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(4px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         /* Cards */
         .card {
             background-color: var(--card-bg);
             border-radius: var(--radius-lg);
-            padding: 24px;
-            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.02);
+            padding: 22px 24px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04), 0 4px 12px rgba(0, 0, 0, 0.02);
             border: 1px solid var(--border-color);
         }
 
@@ -89,8 +390,8 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 18px;
-            padding-bottom: 12px;
+            margin-bottom: 16px;
+            padding-bottom: 10px;
             border-bottom: 1px solid #f1f5f9;
         }
 
@@ -98,19 +399,19 @@
             display: flex;
             align-items: center;
             gap: 8px;
-            font-size: 16px;
+            font-size: 15.5px;
             font-weight: 700;
             color: var(--text-main);
             margin: 0;
         }
 
-        .card-title svg, .card-title .icon {
-            font-size: 18px;
+        .card-title .icon {
+            font-size: 17px;
         }
 
         /* Form Controls */
         .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 16px;
         }
 
         .form-group:last-child {
@@ -119,7 +420,7 @@
 
         label {
             display: block;
-            margin-bottom: 7px;
+            margin-bottom: 6px;
             font-weight: 600;
             color: var(--text-sub);
             font-size: 13.5px;
@@ -132,10 +433,10 @@
 
         input[type="text"], input[type="password"], select {
             width: 100%;
-            padding: 11px 13px;
+            padding: 10px 12px;
             border: 1px solid #cbd5e1;
             border-radius: var(--radius-md);
-            font-size: 14px;
+            font-size: 13.5px;
             box-sizing: border-box;
             background-color: #fff;
             color: var(--text-main);
@@ -149,7 +450,7 @@
         }
 
         .btn-detect {
-            padding: 0 16px;
+            padding: 0 15px;
             font-size: 13px;
             background-color: #f1f5f9;
             color: var(--text-sub);
@@ -169,7 +470,7 @@
         .help-text {
             font-size: 12px;
             color: var(--text-muted);
-            margin-top: 6px;
+            margin-top: 5px;
             line-height: 1.45;
         }
 
@@ -188,18 +489,17 @@
             display: flex;
             align-items: flex-start;
             gap: 12px;
-            padding: 14px 16px;
+            padding: 12px 14px;
             background-color: #f8fafc;
             border-radius: var(--radius-md);
             border: 1px solid #e2e8f0;
-            margin-bottom: 16px;
         }
 
         .toggle-switch {
             position: relative;
             display: inline-block;
-            width: 42px;
-            height: 24px;
+            width: 40px;
+            height: 22px;
             flex-shrink: 0;
             margin-top: 2px;
         }
@@ -218,19 +518,19 @@
             right: 0;
             bottom: 0;
             background-color: #cbd5e1;
-            transition: .25s;
-            border-radius: 24px;
+            transition: .22s;
+            border-radius: 22px;
         }
 
         .slider:before {
             position: absolute;
             content: "";
-            height: 18px;
-            width: 18px;
+            height: 16px;
+            width: 16px;
             left: 3px;
             bottom: 3px;
             background-color: white;
-            transition: .25s;
+            transition: .22s;
             border-radius: 50%;
             box-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
@@ -248,146 +548,69 @@
         }
 
         .toggle-title {
-            font-size: 14px;
+            font-size: 13.5px;
             font-weight: 600;
             color: var(--text-main);
-            margin-bottom: 3px;
+            margin-bottom: 2px;
         }
 
         .toggle-desc {
-            font-size: 12.5px;
+            font-size: 12px;
             color: var(--text-muted);
             line-height: 1.45;
             margin: 0;
         }
 
-        /* Grid for Token Controls */
-        .settings-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 14px;
-        }
-
-        @media (max-width: 540px) {
-            .settings-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Pay-As-You-Go Callout Card */
-        .callout-payg {
-            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdfa 100%);
+        /* Pro Tip Callout Box */
+        .pro-tip-box {
+            margin-top: 18px;
+            padding: 13px 16px;
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+            border-radius: var(--radius-md);
             border: 1px solid #a7f3d0;
-            border-radius: var(--radius-lg);
-            padding: 22px 24px;
         }
 
-        .payg-header {
+        .pro-tip-header {
             display: flex;
+            align-items: center;
             justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
 
-        .payg-badge {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            padding: 3px 9px;
-            border-radius: 12px;
-            background-color: #d1fae5;
-            color: #065f46;
-            border: 1px solid #a7f3d0;
-        }
-
-        .payg-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: #064e3b;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 7px;
-        }
-
-        .payg-desc {
+        .pro-tip-title {
             font-size: 13px;
-            color: #047857;
-            line-height: 1.5;
-            margin: 0 0 14px 0;
-        }
-
-        .payg-stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-
-        .payg-stat-box {
-            background-color: #ffffff;
-            border: 1px solid #d1fae5;
-            border-radius: 8px;
-            padding: 10px 12px;
-            text-align: center;
-        }
-
-        .payg-stat-val {
-            font-size: 16px;
-            font-weight: 800;
+            font-weight: 700;
             color: #065f46;
-            margin-bottom: 2px;
-        }
-
-        .payg-stat-lbl {
-            font-size: 11px;
-            font-weight: 600;
-            color: #64748b;
-            text-transform: uppercase;
-        }
-
-        .payg-steps {
-            background-color: rgba(255, 255, 255, 0.7);
-            border-radius: 8px;
-            padding: 12px 14px;
-            margin-bottom: 16px;
-            border: 1px solid #e6f4ea;
-        }
-
-        .payg-steps ol {
-            margin: 0;
-            padding-left: 20px;
-            font-size: 12.5px;
-            color: #1e3a2f;
-            line-height: 1.6;
-        }
-
-        .payg-steps li {
-            margin-bottom: 4px;
-        }
-
-        .payg-steps li:last-child {
-            margin-bottom: 0;
-        }
-
-        .btn-payg {
-            display: inline-flex;
+            display: flex;
             align-items: center;
             gap: 6px;
-            padding: 9px 16px;
-            background-color: #059669;
-            color: white;
-            font-size: 13px;
-            font-weight: 600;
-            border-radius: 8px;
-            text-decoration: none;
-            transition: background-color 0.15s;
-            box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
         }
 
-        .btn-payg:hover {
-            background-color: #047857;
+        .pro-tip-badge {
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            background: #d1fae5;
+            color: #047857;
+            padding: 2px 7px;
+            border-radius: 10px;
+        }
+
+        .pro-tip-text {
+            margin: 0;
+            font-size: 12px;
+            color: #166534;
+            line-height: 1.5;
+        }
+
+        .pro-tip-text a {
+            color: #047857;
+            font-weight: 600;
+            text-decoration: underline;
+        }
+
+        .pro-tip-text a:hover {
+            color: #064e3b;
         }
 
         /* Pro Card */
@@ -406,59 +629,6 @@
             color: #475569;
         }
 
-        /* Buttons & Footer */
-        .button-group {
-            display: flex;
-            gap: 12px;
-            margin-top: 10px;
-        }
-
-        button.primary-btn {
-            flex: 1;
-            padding: 13px 18px;
-            border-radius: var(--radius-md);
-            font-size: 14.5px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background-color 0.15s, transform 0.1s;
-            border: none;
-        }
-
-        button.primary-btn:active {
-            transform: scale(0.99);
-        }
-
-        #save-btn {
-            background-color: var(--primary);
-            color: white;
-            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
-        }
-
-        #save-btn:hover {
-            background-color: var(--primary-hover);
-        }
-
-        #test-btn {
-            background-color: #ffffff;
-            color: var(--text-sub);
-            border: 1px solid #cbd5e1;
-        }
-
-        #test-btn:hover {
-            background-color: #f8fafc;
-            border-color: #94a3b8;
-        }
-
-        #status {
-            text-align: center;
-            font-weight: 600;
-            font-size: 13.5px;
-            min-height: 22px;
-            line-height: 1.4;
-            word-break: break-word;
-            padding: 4px 0;
-        }
-
         .smart-pill {
             display: inline-flex;
             align-items: center;
@@ -466,81 +636,136 @@
             font-size: 11.5px;
             color: #059669;
             background-color: #ecfdf5;
-            padding: 4px 8px;
+            padding: 5px 9px;
             border-radius: 6px;
             font-weight: 500;
-            margin-top: 6px;
         }
     </style>
 </head>
 <body>
+    <!-- Sticky Header with Brand and Info -->
+    <header class="sticky-header">
+        <div class="header-inner">
+            <div class="header-brand">
+                <img src="images/icon48.png" alt="Gemini Grammar & Rephrase Helper Icon" class="brand-icon-img">
+                <div class="brand-text">
+                    <h1>Gemini Grammar & Rephrase Helper</h1>
+                    <span>Extension Settings & Preferences</span>
+                </div>
+            </div>
+            <div class="header-badge-wrap">
+                <span class="version-badge">v1.2.1</span>
+            </div>
+        </div>
+    </header>
+
     <div class="container">
-        <!-- Header -->
-        <div class="page-header">
-            <div class="header-badge">✦ Gemini Helper v1.2.1</div>
-            <h1>Extension Preferences</h1>
-            <p>Configure your Gemini API connection, quota optimization, and writing preferences.</p>
+        <!-- Save Settings Action Bar Above Tabs -->
+        <div class="save-action-bar">
+            <div id="status"></div>
+            <button type="button" id="save-btn" class="save-settings-btn" title="Save your settings">Save Settings</button>
         </div>
 
-        <!-- 1. API Configuration Card -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title"><span class="icon">🔑</span> Gemini API Configuration</h2>
-            </div>
-            
-            <div class="form-group">
-                <label for="api-key">Gemini API Key</label>
-                <div class="input-row">
-                    <input type="password" id="api-key" placeholder="Enter your Gemini API key (AIzaSy...)">
-                    <button type="button" id="toggle-key-visibility" class="btn-detect" title="Show or hide key">Show</button>
-                </div>
-                <div class="help-text">
-                    Get a key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>. Keys are stored safely in local Chrome sync storage.
-                </div>
-            </div>
+        <!-- Full-Width Pill Tabs Navigation -->
+        <nav class="tabs-nav" role="tablist">
+            <button type="button" class="tab-btn active" data-tab="general" role="tab">
+                <span class="tab-icon">🔑</span> API & Models
+            </button>
+            <button type="button" class="tab-btn" data-tab="realtime" role="tab">
+                <span class="tab-icon">✍️</span> Real-Time Check
+            </button>
+            <button type="button" class="tab-btn" data-tab="tokens" role="tab">
+                <span class="tab-icon">⚡</span> Token Limits
+            </button>
+            <button type="button" class="tab-btn" data-tab="pro" role="tab">
+                <span class="tab-icon">⭐</span> Pro Plan
+            </button>
+        </nav>
 
-            <div class="form-group">
-                <label for="model-select">Gemini Model</label>
-                <div class="input-row">
-                    <select id="model-select">
-                        <option value="gemini-3.8-flash" selected>gemini-3.8-flash (Recommended - Fast & Lightweight)</option>
-                        <option value="gemini-2.5-flash">gemini-2.5-flash</option>
-                        <option value="gemini-2.0-flash">gemini-2.0-flash</option>
-                        <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-                    </select>
-                    <button type="button" id="detect-btn" class="btn-detect" title="Query your API key to find all supported models">Auto-Detect</button>
+        <!-- TAB 1: API & Models -->
+        <div id="tab-general" class="tab-panel active" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title"><span class="icon">🔑</span> Gemini API Configuration</h2>
                 </div>
-                <div class="help-text">
-                    Flash models offer near-instant responses with maximum rate limits. Click <strong>Auto-Detect</strong> to discover all models available on your key.
+                
+                <div class="form-group">
+                    <label for="api-key">Gemini API Key</label>
+                    <div class="input-row">
+                        <input type="password" id="api-key" placeholder="Enter your Gemini API key (AIzaSy...)">
+                        <button type="button" id="toggle-key-visibility" class="btn-detect" title="Show or hide key">Show</button>
+                    </div>
+                    <div class="help-text">
+                        Get a free key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>. Keys are stored safely in local Chrome storage.
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <!-- 2. Token Waste & Performance Optimization Card (User Request 1) -->
-        <div class="card">
-            <div class="card-header">
-                <h2 class="card-title"><span class="icon">⚡</span> Token & Quota Optimization</h2>
-                <span style="font-size: 11.5px; font-weight: 600; color: #059669; background-color: #d1fae5; padding: 2px 8px; border-radius: 10px;">Free & Pro</span>
-            </div>
+                <div class="form-group">
+                    <label for="model-select">Gemini Model</label>
+                    <div class="input-row">
+                        <select id="model-select">
+                            <option value="gemini-3.8-flash" selected>gemini-3.8-flash (Recommended - Fast & Lightweight)</option>
+                            <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                            <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+                            <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                        </select>
+                        <button type="button" id="detect-btn" class="btn-detect" title="Query your API key to find all supported models">Auto-Detect</button>
+                    </div>
+                    <div class="help-text">
+                        Click <strong>Auto-Detect</strong> to automatically load all models enabled on your Google API key.
+                    </div>
+                </div>
 
-            <!-- Auto-Check Toggle -->
-            <div class="toggle-container">
-                <label class="toggle-switch">
-                    <input type="checkbox" id="auto-check-toggle">
-                    <span class="slider"></span>
-                </label>
-                <div class="toggle-label-wrap">
-                    <div class="toggle-title">Real-Time Grammar Check While Typing</div>
-                    <p class="toggle-desc">
-                        Displays a subtle floating <strong style="color: #2563eb;">✦</strong> badge in text fields when you finish typing, highlighting typos and mistakes with 1-click fixes. Disable this anytime to save 100% of background auto-tokens.
+                <!-- Test Connection Row inside the Configuration Card -->
+                <div class="api-test-row">
+                    <button type="button" id="test-btn" class="btn-test-connection" title="Verify your Gemini API key and model connection">
+                        <span class="icon">⚡</span> Test Connection
+                    </button>
+                    <div id="test-status" class="test-status-msg"></div>
+                </div>
+
+                <!-- Pro Tip Callout Box -->
+                <div class="pro-tip-box">
+                    <div class="pro-tip-header">
+                        <span class="pro-tip-title">
+                            <span>💡 Pro Tip:</span> Practically Unlimited Checks for Pennies
+                        </span>
+                        <span class="pro-tip-badge">Cost Saver</span>
+                    </div>
+                    <p class="pro-tip-text">
+                        Hitting free tier rate limits? Attach a billing card to <a href="https://aistudio.google.com/app/billing" target="_blank" rel="noreferrer">Google AI Studio Pay-As-You-Go ↗</a> to remove all daily limits. 1,000 checks cost less than $0.05, and new Google accounts often get $300 in free trial credits!
                     </p>
                 </div>
             </div>
 
-            <div class="settings-grid" id="auto-check-sub-settings">
-                <!-- Auto-Check Debounce Delay -->
-                <div class="form-group">
-                    <label for="debounce-select">Auto-Check Typing Delay</label>
+
+        </div>
+
+        <!-- TAB 2: Real-Time Grammar Check (Inline Typing) -->
+        <div id="tab-realtime" class="tab-panel" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title"><span class="icon">✍️</span> Real-Time Grammar Check (Inline Typing)</h2>
+                    <span style="font-size: 11.5px; font-weight: 600; color: #2563eb; background-color: #eff6ff; padding: 2px 8px; border-radius: 10px;">Grammarly-Style</span>
+                </div>
+
+                <!-- Auto-Check Toggle Box -->
+                <div class="toggle-container" style="margin-bottom: 16px;">
+                    <label class="toggle-switch">
+                        <input type="checkbox" id="auto-check-toggle">
+                        <span class="slider"></span>
+                    </label>
+                    <div class="toggle-label-wrap">
+                        <div class="toggle-title">Enable Real-Time Check While Typing</div>
+                        <p class="toggle-desc">
+                            Displays a subtle floating <strong style="color: #2563eb;">✦</strong> badge in text fields when you finish typing, highlighting typos and mistakes with 1-click direct fixes. Disable this anytime to save 100% of background auto-tokens.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Auto-Check Typing Delay -->
+                <div id="auto-check-sub-settings" class="form-group" style="transition: opacity 0.2s;">
+                    <label for="debounce-select">Typing Pause Delay</label>
                     <select id="debounce-select">
                         <option value="1500">1.5s (Fast - Frequent checks)</option>
                         <option value="2500" selected>2.5s (Balanced - Recommended)</option>
@@ -548,13 +773,23 @@
                         <option value="5000">5.0s (Max Saver - Only long pauses)</option>
                     </select>
                     <div class="help-text">
-                        Wait time after you pause typing before Gemini inspects text. Higher delays eliminate redundant checks.
+                        Wait time after you pause typing before Gemini inspects text. Higher delays eliminate redundant checks while you are thinking.
                     </div>
                 </div>
+            </div>
+        </div>
 
-                <!-- Max Output Tokens -->
+        <!-- TAB 3: Token Limits & Optimization -->
+        <div id="tab-tokens" class="tab-panel" role="tabpanel">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title"><span class="icon">⚡</span> Token Limits & Quota Optimization</h2>
+                    <span style="font-size: 11.5px; font-weight: 600; color: #059669; background-color: #d1fae5; padding: 2px 8px; border-radius: 10px;">Free & Pro</span>
+                </div>
+
+                <!-- Max Output Tokens Cap (Popup Suggestions & Shortcuts) -->
                 <div class="form-group">
-                    <label for="max-tokens-select">Max Output Tokens Cap</label>
+                    <label for="max-tokens-select">Max Output Tokens Cap (Popup Suggestions & Shortcuts)</label>
                     <select id="max-tokens-select">
                         <option value="0" selected>No Limit (Model Default - Recommended)</option>
                         <option value="150">150 Tokens (Ultra Compact - Fastest)</option>
@@ -563,108 +798,60 @@
                         <option value="1000">1000 Tokens (Extended Output)</option>
                     </select>
                     <div class="help-text">
-                        Hard cap on Gemini's generated response length. <strong>No Limit</strong> ensures responses are never truncated midway on long texts.
+                        Hard cap on Gemini's generated response length for popup suggestions and keyboard shortcuts. <strong>No Limit</strong> ensures responses are never truncated midway on long texts.
                     </div>
                 </div>
-            </div>
 
-            <div class="smart-pill">
-                <span>🛡️ Smart LRU Caching Active:</span> Identical text phrases are served locally from memory without burning API quota.
-            </div>
-        </div>
-
-        <!-- 3. Guide Users to "Pay-As-You-Go" (User Request 2) -->
-        <div class="callout-payg">
-            <div class="payg-header">
-                <h3 class="payg-title"><span>💡</span> Practically Unlimited Checks with Google AI Studio Pay-As-You-Go</h3>
-                <span class="payg-badge">Pro Tip</span>
-            </div>
-            
-            <p class="payg-desc">
-                Google's free API tier enforces strict rate limits (15 requests/min and daily quota ceilings). If you write frequently, enabling Google's <strong>Pay-As-You-Go</strong> tier eliminates all daily limits for mere pennies:
-            </p>
-
-            <div class="payg-stats">
-                <div class="payg-stat-box">
-                    <div class="payg-stat-val">~$0.05</div>
-                    <div class="payg-stat-lbl">Per 1,000 Checks</div>
-                </div>
-                <div class="payg-stat-box">
-                    <div class="payg-stat-val">Unlimited</div>
-                    <div class="payg-stat-lbl">Daily Quota</div>
-                </div>
-                <div class="payg-stat-box">
-                    <div class="payg-stat-val">$300 Credit</div>
-                    <div class="payg-stat-lbl">Free Google Trial</div>
+                <div class="smart-pill" style="margin-top: 14px;">
+                    <span>🛡️ Smart LRU Caching Active:</span> Identical text phrases are served locally from memory without burning API quota.
                 </div>
             </div>
-
-            <div class="payg-steps">
-                <ol>
-                    <li>Open <strong><a href="https://aistudio.google.com/app/billing" target="_blank" rel="noreferrer" style="color: #047857; font-weight: 700; text-decoration: underline;">Google AI Studio Billing</a></strong> in your browser.</li>
-                    <li>Click <strong>"Set up billing"</strong> to link a Google Cloud billing account (new users receive $300 in free credits).</li>
-                    <li>That's it! Your API key will immediately upgrade to paid tier rates (~$0.075 / million tokens) with zero daily quota exhaustion.</li>
-                </ol>
-            </div>
-
-            <div style="display: flex; justify-content: flex-start;">
-                <a href="https://aistudio.google.com/app/billing" target="_blank" rel="noreferrer" class="btn-payg">
-                    Open Google AI Studio Billing ↗
-                </a>
-            </div>
         </div>
 
-        <!-- 4. Pro Membership & Style Presets Card -->
-        <div class="card card-pro">
-            <div class="card-header" style="border-bottom-color: #dbeafe;">
-                <h2 class="card-title" style="color: #1e3a8a;"><span class="icon">⭐</span> Pro Membership & Custom Styles</h2>
-                <span id="pro-badge" class="pro-badge">Free Plan</span>
-            </div>
-
-            <div class="help-text" style="font-size: 13px; color: #334155; margin-bottom: 14px; line-height: 1.5;">
-                Pro unlocks instant writing transformations: <strong>Make Formal</strong>, <strong>Simplify for 5th Grader</strong>, <strong>Convert to Bullet Points</strong>, <strong>Casual Slack Message</strong>, and unlimited <strong>Custom Prompts</strong>.
-            </div>
-
-            <!-- Upgrade Link -->
-            <div id="pro-upgrade-box" style="margin-bottom: 14px;">
-                <a id="buy-pro-btn" href="https://checkout.freemius.com/?plugin_id=41271&pricing_id=98283" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 9px 18px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
-                    Upgrade to Pro ↗
-                </a>
-            </div>
-
-            <!-- License Activation Input -->
-            <div style="display: flex; gap: 8px; align-items: center;">
-                <input type="text" id="fs-license-key" placeholder="Enter your license key (e.g. fs_lic_...)" style="flex: 1; padding: 10px 12px; font-size: 13px;">
-                <button type="button" id="activate-license-btn" class="btn-detect" style="padding: 10px 16px; background-color: #2563eb; color: white; border-color: #2563eb;">Activate</button>
-                <button type="button" id="deactivate-license-btn" class="btn-detect" style="padding: 10px 16px; display: none; background-color: #ef4444; color: white; border-color: #ef4444;">Deactivate</button>
-            </div>
-            
-            <div style="margin-top: 8px; font-size: 12px; color: #64748b;">
-                <span id="license-status-text">Enter your license key above to unlock custom prompt presets.</span>
-            </div>
-        </div>
-
-        <!-- 5. Keyboard Shortcut Guide Card -->
-        <div class="card" style="padding: 18px 24px;">
-            <div style="display: flex; align-items: center; justify-content: space-between;">
-                <div>
-                    <h3 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: var(--text-main);">⌨️ Keyboard Shortcut</h3>
-                    <p style="margin: 0; font-size: 12.5px; color: var(--text-muted);">
-                        Select any text on any page and press <strong style="color: var(--text-main);">Alt + Shift + G</strong> (or <strong style="color: var(--text-main);">Option + Shift + G</strong> on Mac) to open suggestions instantly.
-                    </p>
+        <!-- TAB 5: Pro Membership & Presets -->
+        <div id="tab-pro" class="tab-panel" role="tabpanel">
+            <div class="card card-pro">
+                <div class="card-header" style="border-bottom-color: #dbeafe;">
+                    <h2 class="card-title" style="color: #1e3a8a;"><span class="icon">⭐</span> Pro Membership & Custom Styles</h2>
+                    <span id="pro-badge" class="pro-badge">Free Plan</span>
                 </div>
-                <a href="chrome://extensions/shortcuts" target="_blank" style="font-size: 12px; color: var(--primary); text-decoration: none; font-weight: 600; white-space: nowrap; margin-left: 12px;">Customize ↗</a>
+
+                <div class="help-text" style="font-size: 13px; color: #334155; margin-bottom: 14px; line-height: 1.5;">
+                    Pro unlocks instant writing transformations: <strong>Make Formal</strong>, <strong>Simplify for 5th Grader</strong>, <strong>Convert to Bullet Points</strong>, <strong>Casual Slack Message</strong>, and unlimited <strong>Custom Prompts</strong>.
+                </div>
+
+                <!-- Upgrade Link -->
+                <div id="pro-upgrade-box" style="margin-bottom: 14px;">
+                    <a id="buy-pro-btn" href="https://checkout.freemius.com/?plugin_id=41271&pricing_id=98283" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 9px 18px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+                        Upgrade to Pro ↗
+                    </a>
+                </div>
+
+                <!-- License Activation Input -->
+                <div style="display: flex; gap: 8px; align-items: center;">
+                    <input type="text" id="fs-license-key" placeholder="Enter your license key (e.g. fs_lic_...)" style="flex: 1; padding: 10px 12px; font-size: 13px;">
+                    <button type="button" id="activate-license-btn" class="btn-detect" style="padding: 10px 16px; background-color: #2563eb; color: white; border-color: #2563eb;">Activate</button>
+                    <button type="button" id="deactivate-license-btn" class="btn-detect" style="padding: 10px 16px; display: none; background-color: #ef4444; color: white; border-color: #ef4444;">Deactivate</button>
+                </div>
+                
+                <div style="margin-top: 8px; font-size: 12px; color: #64748b;">
+                    <span id="license-status-text">Enter your license key above to unlock custom prompt presets.</span>
+                </div>
             </div>
         </div>
 
-        <!-- Save & Test Actions -->
-        <div class="button-group">
-            <button id="save-btn" class="primary-btn">Save Settings</button>
-            <button id="test-btn" class="primary-btn">Test Connection</button>
+        <!-- Global Keyboard Shortcut Banner - Displayed Always Below Settings Tabs -->
+        <div class="shortcut-banner">
+            <div class="shortcut-banner-left">
+                <span class="shortcut-badge">⌨️ Keyboard Shortcut</span>
+                <span class="shortcut-desc">
+                    Select text on any webpage and press <kbd>Alt</kbd> + <kbd>Shift</kbd> + <kbd>G</kbd> <span class="shortcut-mac-note">(or <kbd>Option</kbd> + <kbd>Shift</kbd> + <kbd>G</kbd> on Mac)</span> to open suggestions instantly.
+                </span>
+            </div>
+            <a href="chrome://extensions/shortcuts" target="_blank" class="shortcut-action" title="Customize keyboard shortcuts">Customize ↗</a>
         </div>
-
-        <div id="status"></div>
     </div>
+
     <script src="options.js"></script>
 </body>
 </html>
