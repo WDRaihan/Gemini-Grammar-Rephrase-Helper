@@ -424,7 +424,10 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
   }
 
   const apiKey = syncData.geminiApiKey?.trim();
-  const rawModel = syncData.geminiModel?.trim() || "gemini-2.5-flash";
+  let rawModel = syncData.geminiModel?.trim() || "gemini-3.8-flash";
+  if (rawModel === "gemini-2.0-flash") {
+    rawModel = "gemini-3.8-flash";
+  }
   const model = rawModel.replace(/^models\//, "");
 
   // Helper to ensure content script is ready and send message
@@ -476,8 +479,23 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
         parts: [{ text: promptText }]
       }],
       generationConfig: {
-        responseMimeType: "application/json",
-        temperature: 0.3
+        temperature: 0.2,
+        response_mime_type: "application/json",
+        response_schema: {
+          type: "OBJECT",
+          properties: {
+            grammar_fix: {
+              type: "STRING",
+              description: "Primary corrected or rephrased version according to requested style."
+            },
+            rephrases: {
+              type: "ARRAY",
+              items: { type: "STRING" },
+              description: "Two alternative rephrased variations."
+            }
+          },
+          required: ["grammar_fix", "rephrases"]
+        }
       }
     };
 
@@ -657,7 +675,7 @@ async function handleAutoCheckGrammar(text) {
     return { hasErrors: false, error: 'NO_API_KEY' };
   }
 
-  const rawModel = data.geminiModel?.trim() || "gemini-2.5-flash";
+  const rawModel = data.geminiModel?.trim() || "gemini-3.8-flash";
   const model = rawModel.replace(/^models\//, "");
 
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
