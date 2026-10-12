@@ -544,6 +544,7 @@ const proUpgradeBox = document.getElementById('pro-upgrade-box');
 const fsLicenseInput = document.getElementById('fs-license-key');
 const activateLicenseBtn = document.getElementById('activate-license-btn');
 const deactivateLicenseBtn = document.getElementById('deactivate-license-btn');
+const fsPortalManageLink = document.getElementById('fs-portal-manage-link');
 const licenseStatusText = document.getElementById('license-status-text');
 
 function showLicenseStatus(text, type = 'normal') {
@@ -608,6 +609,7 @@ function loadProSettings() {
       }
       if (activateLicenseBtn) activateLicenseBtn.style.display = 'none';
       if (deactivateLicenseBtn) deactivateLicenseBtn.style.display = 'inline-block';
+      if (fsPortalManageLink) fsPortalManageLink.style.display = 'inline-flex';
       showLicenseStatus(`Your ${result.fs_plan_name || 'Pro'} membership is active. Enjoy all style presets!`, 'success');
     } else {
       if (proBadge) {
@@ -615,13 +617,14 @@ function loadProSettings() {
         proBadge.style.backgroundColor = '#e2e8f0';
         proBadge.style.color = '#475569';
       }
-      if (proUpgradeBox) proUpgradeBox.style.display = 'block';
+      if (proUpgradeBox) proUpgradeBox.style.display = 'flex';
       if (fsLicenseInput) {
         fsLicenseInput.value = '';
         fsLicenseInput.disabled = false;
       }
       if (activateLicenseBtn) activateLicenseBtn.style.display = 'inline-block';
       if (deactivateLicenseBtn) deactivateLicenseBtn.style.display = 'none';
+      if (fsPortalManageLink) fsPortalManageLink.style.display = 'none';
       if (!licenseStatusText || !licenseStatusText.textContent.startsWith('⚠️')) {
         showLicenseStatus('Enter your license key above to unlock all styles and custom prompts.', 'normal');
       }

@@ -921,13 +921,19 @@
                 <p style="font-size: 13px; color: #334155; line-height: 1.5; margin: 0 0 14px 0;">
                     Controlling and creating custom writing transformation presets is an exclusive Pro feature. Upgrade to Pro or enter your license key to enable/disable presets and create unlimited AI prompt presets.
                 </p>
-                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                     <a href="https://checkout.freemius.com/?plugin_id=41271&pricing_id=98283" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 9px 18px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
                         Upgrade to Pro ↗
                     </a>
                     <button type="button" id="switch-to-pro-tab-btn" class="btn-detect" style="padding: 9px 15px;">
                         Enter License Key
                     </button>
+                    <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #475569;">
+                        <span>Already purchased?</span>
+                        <a href="https://customers.freemius.com/" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 600; text-decoration: underline; text-underline-offset: 2px;" title="Retrieve your license key or manage active device installs">
+                            Find License (Client Portal) ↗
+                        </a>
+                    </div>
                 </div>
             </div>
 
@@ -1002,18 +1008,27 @@
                     Pro unlocks instant writing transformations: <strong>Make Formal</strong>, <strong>Simplify for 5th Grader</strong>, <strong>Convert to Bullet Points</strong>, <strong>Casual Slack Message</strong>, and unlimited <strong>Custom Prompts</strong>.
                 </div>
 
-                <!-- Upgrade Link -->
-                <div id="pro-upgrade-box" style="margin-bottom: 14px;">
+                <!-- Upgrade Link & Client Portal -->
+                <div id="pro-upgrade-box" style="margin-bottom: 14px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
                     <a id="buy-pro-btn" href="https://checkout.freemius.com/?plugin_id=41271&pricing_id=98283" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 9px 18px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
                         Upgrade to Pro ↗
                     </a>
+                    <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #475569;">
+                        <span>Already purchased?</span>
+                        <a href="https://customers.freemius.com/" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 600; text-decoration: underline; text-underline-offset: 2px;" title="Login to retrieve your license key or manage active device installs">
+                            Find License (Client Portal) ↗
+                        </a>
+                    </div>
                 </div>
 
                 <!-- License Activation Input -->
-                <div style="display: flex; gap: 8px; align-items: center;">
-                    <input type="text" id="fs-license-key" placeholder="Enter your license key (e.g. fs_lic_...)" style="flex: 1; padding: 10px 12px; font-size: 13px;">
+                <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <input type="text" id="fs-license-key" placeholder="Enter your license key (e.g. fs_lic_...)" style="flex: 1; min-width: 200px; padding: 10px 12px; font-size: 13px;">
                     <button type="button" id="activate-license-btn" class="btn-detect" style="padding: 10px 16px; background-color: #2563eb; color: white; border-color: #2563eb;">Activate</button>
                     <button type="button" id="deactivate-license-btn" class="btn-detect" style="padding: 10px 16px; display: none; background-color: #ef4444; color: white; border-color: #ef4444;">Deactivate</button>
+                    <a id="fs-portal-manage-link" href="https://customers.freemius.com/" target="_blank" rel="noopener noreferrer" class="btn-detect" style="padding: 10px 14px; text-decoration: none; font-size: 13px; display: none; align-items: center; gap: 5px; font-weight: 600;" title="Manage your subscription, invoices, and devices">
+                        Manage in Client Portal ↗
+                    </a>
                 </div>
                 
                 <div style="margin-top: 10px; font-size: 13px; line-height: 1.5;">

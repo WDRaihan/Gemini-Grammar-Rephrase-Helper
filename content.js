@@ -321,13 +321,19 @@ function showProUpgradeBanner() {
       <li>✓ Executive & Formal Tone</li>
       <li>✓ Casual Slack & Chat Mode</li>
     </ul>
-    <div class="gemini-pro-banner-actions">
+    <div class="gemini-pro-banner-actions" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
       <a href="${FREEMIUS_CHECKOUT_URL}" target="_blank" rel="noopener noreferrer" class="gemini-btn-buy-pro">
         Upgrade to Pro
       </a>
       <button type="button" class="gemini-btn-activate-link" id="gemini-toggle-key-input">
-        Already purchased? Activate key
+        Enter license key
       </button>
+      <div style="font-size: 12px; color: #475569; display: inline-flex; align-items: center; gap: 5px;">
+        <span>Already purchased?</span>
+        <a href="https://customers.freemius.com/" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline; font-weight: 500;">
+          Find License (Client Portal) ↗
+        </a>
+      </div>
     </div>
     <div class="gemini-pro-inline-activate" id="gemini-pro-key-row" style="display: none;">
       <input type="text" id="gemini-banner-license-key" placeholder="Enter your license key (e.g. fs_lic_...)" />
