@@ -54,8 +54,8 @@ if (window.__geminiCurrentRuntime !== chrome.runtime) {
 
       // Safety watchdog: ensure loading spinner never hangs indefinitely
       geminiLoadingTimer = setTimeout(() => {
-        updateModalContent("Request timed out. Gemini took too long to respond. Please verify your Gemini API key in Options and try again.", true);
-      }, 20000);
+        updateModalContent("Request timed out. Google Gemini took too long to respond. Please check your connection or try again.", true);
+      }, 28000);
 
     } else if (request.type === 'SHOW_RESULT') {
       clearGeminiLoadingTimer();
@@ -233,8 +233,8 @@ function triggerStyleRephrase(styleId, customPrompt = '') {
   }
 
   geminiLoadingTimer = setTimeout(() => {
-    updateModalContent("Request timed out. Please try again.", true);
-  }, 20000);
+    updateModalContent("Request timed out. Google Gemini took too long to respond. Please try again.", true);
+  }, 28000);
 
   chrome.runtime.sendMessage({
     type: 'REPHRASE_WITH_STYLE',

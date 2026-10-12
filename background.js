@@ -154,9 +154,14 @@ function formatFriendlyErrorMessage(rawError) {
     return "Gemini was unable to process this text due to content safety policies.";
   }
 
-  // 7. Timeout or Network Issue
-  if (lower.includes("timed out") || lower.includes("abort") || lower.includes("failed to fetch") || lower.includes("networkerror")) {
-    return "Connection timed out. Gemini took too long to respond. Please check your connection and try again.";
+  // 7. Network Disconnect or Blocked
+  if (lower.includes("failed to fetch") || lower.includes("networkerror")) {
+    return "Network connection error. Unable to reach Google servers. Please check your internet connection or VPN.";
+  }
+
+  // 8. Timeout
+  if (lower.includes("timed out") || lower.includes("abort")) {
+    return "Request timed out. Google Gemini took too long to generate suggestions. Please try again or ensure a fast Flash model is selected in Options.";
   }
 
   // 8. JSON Mode unsupported
@@ -396,7 +401,11 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
     return;
   }
 
-  const proInfo = await getProStatus();
+  // 1. Fetch settings in parallel
+  const [proInfo, syncData] = await Promise.all([
+    getProStatus(),
+    chrome.storage.sync.get(['geminiApiKey', 'geminiModel'])
+  ]);
   const isPro = proInfo.isPro;
 
   // Gate pro styles
@@ -414,41 +423,51 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
     return;
   }
 
+  const apiKey = syncData.geminiApiKey?.trim();
+  const rawModel = syncData.geminiModel?.trim() || "gemini-2.5-flash";
+  const model = rawModel.replace(/^models\//, "");
+
+  // Helper to ensure content script is ready and send message
+  const sendTabMessage = async (msg) => {
+    try {
+      await chrome.tabs.sendMessage(tab.id, msg);
+    } catch (_) {
+      // Fallback: inject content script if not already present on page
+      try {
+        await chrome.scripting.insertCSS({ target: { tabId: tab.id }, files: ["style.css"] });
+        await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
+        await chrome.tabs.sendMessage(tab.id, msg);
+      } catch (injectErr) {
+        console.warn("Could not send message or inject script into tab:", injectErr);
+      }
+    }
+  };
+
   try {
-    // 1. Inject CSS and content script into the active tab
-    await chrome.scripting.insertCSS({ target: { tabId: tab.id }, files: ["style.css"] });
-    await chrome.scripting.executeScript({ target: { tabId: tab.id }, files: ["content.js"] });
-
-    // 2. Check for the API key and model preference
-    const data = await chrome.storage.sync.get(['geminiApiKey', 'geminiModel']);
-    const apiKey = data.geminiApiKey?.trim();
-    const rawModel = data.geminiModel?.trim() || "gemini-3.8-flash";
-    const model = rawModel.replace(/^models\//, "");
-
-    // 3. Handle missing API key
+    // 2. Check for missing API key
     if (!apiKey) {
       const errorMessage = "Gemini API key not found. Please set your API key in the extension's options page.";
-      await chrome.tabs.sendMessage(tab.id, {
+      await sendTabMessage({
         type: 'SHOW_RESULT',
         data: errorMessage,
         isError: true,
         originalText: text,
         activeStyle: style,
         isPro
-      }).catch(() => {});
+      });
       chrome.runtime.openOptionsPage();
       return;
     }
 
-    // 4. Show loading modal with current style context
-    await chrome.tabs.sendMessage(tab.id, {
+    // 3. Show loading modal immediately for instant user feedback
+    await sendTabMessage({
       type: 'SHOW_LOADING',
       originalText: text,
       activeStyle: style,
       isPro
-    }).catch(() => {});
+    });
 
-    // 5. Make the API call to Gemini with timeout protection
+    // 4. Make the API call to Gemini with timeout protection
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
     const promptText = buildPromptForStyle(text, style, customPrompt);
 
@@ -457,12 +476,13 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
         parts: [{ text: promptText }]
       }],
       generationConfig: {
-        responseMimeType: "application/json"
+        responseMimeType: "application/json",
+        temperature: 0.3
       }
     };
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 18000); // 18-second timeout
+    const timeoutId = setTimeout(() => controller.abort(), 25000); // 25-second timeout for server load spikes
 
     let response;
     try {
@@ -477,7 +497,7 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
       });
     } catch (fetchErr) {
       if (fetchErr.name === 'AbortError') {
-        throw new Error("Request timed out after 18 seconds. Gemini took too long to respond. Please try again.");
+        throw new Error("Request timed out after 25 seconds. Gemini took too long to respond. Please try again.");
       }
       throw fetchErr;
     } finally {
