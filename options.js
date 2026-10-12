@@ -311,6 +311,233 @@ async function testConnection() {
   }
 }
 
+function escapeHTML(str) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/[&<>'"]/g, tag => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;'
+  }[tag] || tag));
+}
+
+// Default Presets definition
+const DEFAULT_STYLE_PRESETS = [
+  {
+    id: 'formal',
+    label: 'Make Formal',
+    prompt: 'Rewrite the following text in an executive, formal, and polished professional tone suitable for high-level business correspondence. Fix all grammar and elevate vocabulary.',
+    enabled: true,
+    isBuiltIn: true
+  },
+  {
+    id: 'simplify',
+    label: 'Simplify for 5th Grader',
+    prompt: 'Rewrite the following text so that an elementary school student (5th grader) can effortlessly understand it. Use simple, direct words, short sentences, and avoid jargon while preserving the core meaning.',
+    enabled: true,
+    isBuiltIn: true
+  },
+  {
+    id: 'bullets',
+    label: 'Convert to Bullets',
+    prompt: 'Convert the key ideas and points from the following text into clear, readable, and structured bullet points (use • symbol).',
+    enabled: true,
+    isBuiltIn: true
+  },
+  {
+    id: 'slack',
+    label: 'Casual Slack Message',
+    prompt: 'Rewrite the following text as a casual, warm, and natural workplace chat message (ideal for Slack, Teams, or Discord). Friendly, concise, approachable while polite and professional.',
+    enabled: true,
+    isBuiltIn: true
+  }
+];
+
+// Presets Storage & Management
+function loadStoredPresets(callback) {
+  chrome.storage.sync.get(['stylePresets'], (result) => {
+    let presets = result.stylePresets;
+    if (!Array.isArray(presets) || presets.length === 0) {
+      presets = JSON.parse(JSON.stringify(DEFAULT_STYLE_PRESETS));
+      chrome.storage.sync.set({ stylePresets: presets });
+    } else {
+      // Ensure all built-in presets exist
+      let updated = false;
+      DEFAULT_STYLE_PRESETS.forEach(defPreset => {
+        const found = presets.find(p => p.id === defPreset.id);
+        if (!found) {
+          presets.push({ ...defPreset });
+          updated = true;
+        }
+      });
+      if (updated) {
+        chrome.storage.sync.set({ stylePresets: presets });
+      }
+    }
+    if (callback) callback(presets);
+  });
+}
+
+function renderStylePresets() {
+  loadStoredPresets((presets) => {
+    const builtinList = document.getElementById('builtin-presets-list');
+    const customList = document.getElementById('custom-presets-list');
+    const customCountEl = document.getElementById('custom-presets-count');
+
+    if (!builtinList || !customList) return;
+
+    builtinList.innerHTML = '';
+    customList.innerHTML = '';
+
+    const builtins = presets.filter(p => p.isBuiltIn);
+    const customs = presets.filter(p => !p.isBuiltIn);
+
+    if (customCountEl) {
+      customCountEl.textContent = `${customs.length} custom preset${customs.length === 1 ? '' : 's'}`;
+    }
+
+    // 1. Render Built-in Presets
+    builtins.forEach(preset => {
+      const card = document.createElement('div');
+      card.className = 'preset-item-card';
+      const isChecked = preset.enabled !== false;
+      card.innerHTML = `
+        <div class="preset-item-main">
+          <div class="preset-item-title">
+            <span>${escapeHTML(preset.label)}</span>
+            <span class="pro-badge" style="font-size: 10px; padding: 1px 7px;">Built-in</span>
+          </div>
+          <div class="preset-item-prompt">${escapeHTML(preset.prompt)}</div>
+        </div>
+        <div class="preset-item-actions">
+          <label class="toggle-switch" style="margin: 0;" title="${isChecked ? 'Enabled' : 'Disabled'}">
+            <input type="checkbox" data-preset-id="${preset.id}" ${isChecked ? 'checked' : ''}>
+            <span class="slider"></span>
+          </label>
+        </div>
+      `;
+
+      const checkbox = card.querySelector('input[type="checkbox"]');
+      checkbox.addEventListener('change', (e) => {
+        togglePresetStatus(preset.id, e.target.checked);
+      });
+
+      builtinList.appendChild(card);
+    });
+
+    // 2. Render Custom Presets
+    if (customs.length === 0) {
+      customList.innerHTML = `
+        <div style="font-size: 13px; color: var(--text-muted); font-style: italic; padding: 14px; background: #f8fafc; border: 1px dashed #cbd5e1; border-radius: 8px; text-align: center;">
+          No custom presets created yet. Use the form below to create your first custom AI writing style.
+        </div>
+      `;
+    } else {
+      customs.forEach(preset => {
+        const card = document.createElement('div');
+        card.className = 'preset-item-card';
+        const isChecked = preset.enabled !== false;
+        card.innerHTML = `
+          <div class="preset-item-main">
+            <div class="preset-item-title">
+              <span>${escapeHTML(preset.label)}</span>
+              <span class="smart-pill" style="font-size: 10.5px; padding: 2px 7px; background: #e0e7ff; color: #3730a3; border-color: #c7d2fe;">Custom</span>
+            </div>
+            <div class="preset-item-prompt">${escapeHTML(preset.prompt)}</div>
+          </div>
+          <div class="preset-item-actions">
+            <label class="toggle-switch" style="margin: 0;" title="${isChecked ? 'Enabled' : 'Disabled'}">
+              <input type="checkbox" data-preset-id="${preset.id}" ${isChecked ? 'checked' : ''}>
+              <span class="slider"></span>
+            </label>
+            <button type="button" class="btn-delete-preset" data-delete-id="${preset.id}">Delete</button>
+          </div>
+        `;
+
+        const checkbox = card.querySelector('input[type="checkbox"]');
+        checkbox.addEventListener('change', (e) => {
+          togglePresetStatus(preset.id, e.target.checked);
+        });
+
+        const deleteBtn = card.querySelector('.btn-delete-preset');
+        deleteBtn.addEventListener('click', () => {
+          deleteCustomPreset(preset.id, preset.label);
+        });
+
+        customList.appendChild(card);
+      });
+    }
+  });
+}
+
+function togglePresetStatus(presetId, isEnabled) {
+  loadStoredPresets((presets) => {
+    const updated = presets.map(p => {
+      if (p.id === presetId) {
+        return { ...p, enabled: isEnabled };
+      }
+      return p;
+    });
+
+    chrome.storage.sync.set({ stylePresets: updated }, () => {
+      showStatus('Preset updated successfully!', '#28a745', 2500);
+    });
+  });
+}
+
+function deleteCustomPreset(presetId, presetLabel) {
+  if (!confirm(`Are you sure you want to delete preset "${presetLabel}"?`)) return;
+
+  loadStoredPresets((presets) => {
+    const updated = presets.filter(p => p.id !== presetId);
+    chrome.storage.sync.set({ stylePresets: updated }, () => {
+      showStatus(`Preset "${presetLabel}" deleted.`, '#28a745', 3000);
+      renderStylePresets();
+    });
+  });
+}
+
+function addCustomPreset() {
+  const labelInput = document.getElementById('new-preset-label');
+  const promptInput = document.getElementById('new-preset-prompt');
+  if (!labelInput || !promptInput) return;
+
+  const label = labelInput.value.trim();
+  const prompt = promptInput.value.trim();
+
+  if (!label) {
+    showStatus('Please enter a preset label.', '#dc3545', 4000);
+    labelInput.focus();
+    return;
+  }
+
+  if (!prompt) {
+    showStatus('Please enter prompt instructions for Gemini.', '#dc3545', 4000);
+    promptInput.focus();
+    return;
+  }
+
+  const newId = 'preset_' + Date.now();
+  const newPreset = {
+    id: newId,
+    label: label,
+    prompt: prompt,
+    enabled: true,
+    isBuiltIn: false
+  };
+
+  loadStoredPresets((presets) => {
+    presets.push(newPreset);
+    chrome.storage.sync.set({ stylePresets: presets }, () => {
+      labelInput.value = '';
+      promptInput.value = '';
+      showStatus(`Preset "${label}" created successfully!`, '#28a745', 4000);
+      renderStylePresets();
+    });
+  });
+}
+
 // Pro & Freemius licensing UI controls
 const proBadge = document.getElementById('pro-badge');
 const proUpgradeBox = document.getElementById('pro-upgrade-box');
@@ -322,6 +549,19 @@ const licenseStatusText = document.getElementById('license-status-text');
 function loadProSettings() {
   chrome.storage.sync.get(['isPro', 'fs_license_key', 'fs_plan_name'], (result) => {
     const isPro = result.isPro === true;
+
+    // Toggle Style Presets tab Pro lock vs Manager
+    const presetsProLock = document.getElementById('presets-pro-lock');
+    const presetsManager = document.getElementById('presets-manager');
+    if (presetsProLock && presetsManager) {
+      if (isPro) {
+        presetsProLock.style.display = 'none';
+        presetsManager.style.display = 'block';
+      } else {
+        presetsProLock.style.display = 'block';
+        presetsManager.style.display = 'none';
+      }
+    }
 
     if (isPro) {
       if (proBadge) {
@@ -433,8 +673,23 @@ document.addEventListener('DOMContentLoaded', () => {
   initTabs();
   loadOptions();
   loadProSettings();
+  renderStylePresets();
+
+  const addPresetBtn = document.getElementById('add-preset-btn');
+  if (addPresetBtn) {
+    addPresetBtn.addEventListener('click', addCustomPreset);
+  }
+
+  const switchToProBtn = document.getElementById('switch-to-pro-tab-btn');
+  if (switchToProBtn) {
+    switchToProBtn.addEventListener('click', () => {
+      const proTabBtn = document.querySelector('.tab-btn[data-tab="pro"]');
+      if (proTabBtn) proTabBtn.click();
+    });
+  }
 });
 
 saveButton.addEventListener('click', saveOptions);
 testButton.addEventListener('click', testConnection);
 detectButton.addEventListener('click', () => fetchAvailableModels(true));
+

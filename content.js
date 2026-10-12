@@ -7,7 +7,7 @@ const FREEMIUS_PRODUCT_ID = "41271";
 const FREEMIUS_PRICING_ID = "98283";
 const FREEMIUS_CHECKOUT_URL = `https://checkout.freemius.com/?plugin_id=${FREEMIUS_PRODUCT_ID}&pricing_id=${FREEMIUS_PRICING_ID}`;
 
-const STYLE_PRESETS = [
+const DEFAULT_PRESETS_LIST = [
   { id: 'default', label: '✦ Default', isPro: false },
   { id: 'formal', label: 'Make Formal', isPro: true },
   { id: 'simplify', label: 'Simplify for 5th Grader', isPro: true },
@@ -16,6 +16,30 @@ const STYLE_PRESETS = [
   { id: 'custom', label: 'Custom Prompt...', isPro: true }
 ];
 
+let activeStylePresets = [...DEFAULT_PRESETS_LIST];
+
+function updateActivePresets(storedPresets) {
+  if (!Array.isArray(storedPresets)) {
+    activeStylePresets = [...DEFAULT_PRESETS_LIST];
+    return;
+  }
+
+  const list = [{ id: 'default', label: '✦ Default', isPro: false }];
+
+  storedPresets.forEach(preset => {
+    if (preset.enabled !== false) {
+      list.push({
+        id: preset.id,
+        label: preset.label,
+        isPro: true
+      });
+    }
+  });
+
+  list.push({ id: 'custom', label: 'Custom Prompt...', isPro: true });
+  activeStylePresets = list;
+}
+
 function clearGeminiLoadingTimer() {
   if (geminiLoadingTimer) {
     clearTimeout(geminiLoadingTimer);
@@ -23,18 +47,31 @@ function clearGeminiLoadingTimer() {
   }
 }
 
-// Check initial Pro status from storage
-chrome.storage.sync.get(['isPro'], (res) => {
+// Check initial Pro status and presets from storage
+chrome.storage.sync.get(['isPro', 'stylePresets'], (res) => {
   if (typeof res?.isPro === 'boolean') {
     isProUser = res.isPro;
+  }
+  if (Array.isArray(res?.stylePresets)) {
+    updateActivePresets(res.stylePresets);
   }
 });
 
 // Listen for storage changes
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'sync' && changes.isPro) {
-    isProUser = Boolean(changes.isPro.newValue);
-    refreshPresetsBar();
+  if (area === 'sync') {
+    let shouldRefresh = false;
+    if (changes.isPro) {
+      isProUser = Boolean(changes.isPro.newValue);
+      shouldRefresh = true;
+    }
+    if (changes.stylePresets) {
+      updateActivePresets(changes.stylePresets.newValue);
+      shouldRefresh = true;
+    }
+    if (shouldRefresh) {
+      refreshPresetsBar();
+    }
   }
 });
 
@@ -153,7 +190,12 @@ function renderPresetsBar() {
 
   container.innerHTML = '';
 
-  STYLE_PRESETS.forEach(preset => {
+  // If currentModalStyle is no longer in activeStylePresets, reset to default
+  if (!activeStylePresets.some(p => p.id === currentModalStyle)) {
+    currentModalStyle = 'default';
+  }
+
+  activeStylePresets.forEach(preset => {
     const pill = document.createElement('button');
     pill.type = 'button';
     pill.className = `gemini-preset-pill ${preset.id === currentModalStyle ? 'active' : ''}`;
@@ -224,10 +266,11 @@ function triggerStyleRephrase(styleId, customPrompt = '') {
   clearGeminiLoadingTimer();
   const modalBody = document.getElementById('gemini-modal-body');
   if (modalBody) {
+    const presetLabel = activeStylePresets.find(p => p.id === styleId)?.label || styleId;
     modalBody.innerHTML = `
       <div class="spinner"></div>
       <p style="color: #475569; font-size: 14px; margin-top: 10px;">
-        Applying style: <strong>${escapeHTML(STYLE_PRESETS.find(p => p.id === styleId)?.label || styleId)}</strong>...
+        Applying style: <strong>${escapeHTML(presetLabel)}</strong>...
       </p>
     `;
   }
@@ -395,7 +438,10 @@ function updateModalContent(data, isError, activeStyle = 'default', isPro = fals
           case 'bullets': return 'Bullet Points';
           case 'slack': return 'Casual Slack';
           case 'custom': return 'Custom Style';
-          default: return 'Grammar Fix';
+          default: {
+            const customPreset = activeStylePresets.find(p => p.id === activeStyle);
+            return customPreset ? escapeHTML(customPreset.label) : 'Grammar Fix';
+          }
         }
       }
       return `Variation ${index}`;

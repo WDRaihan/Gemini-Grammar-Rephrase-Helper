@@ -286,7 +286,33 @@ async function deactivateFreemiusLicense() {
   return { success: true };
 }
 
-function buildPromptForStyle(text, style = 'default', customPrompt = '') {
+function buildPromptForStyle(text, style = 'default', customPrompt = '', storedPresets = []) {
+  // 1. Check if style matches any preset (built-in or custom) in storedPresets
+  if (Array.isArray(storedPresets) && storedPresets.length > 0) {
+    const matchedPreset = storedPresets.find(p => p.id === style);
+    if (matchedPreset && matchedPreset.prompt) {
+      return `You are an expert AI writing assistant. Transform the following text strictly according to this writing instruction:
+"${matchedPreset.prompt.trim()}"
+
+Provide:
+1. One primary version fulfilling this instruction.
+2. Two alternative variations that also fulfill the instruction in slightly different ways.
+
+Return a valid JSON object matching this exact schema:
+{
+  "grammar_fix": "primary version fulfilling instruction",
+  "rephrases": [
+    "first alternative variation",
+    "second alternative variation"
+  ]
+}
+
+Original text:
+${JSON.stringify(text)}`;
+    }
+  }
+
+  // 2. Built-in styles fallback if storedPresets did not match
   switch (style) {
     case 'formal':
       return `You are an executive communication assistant. Rewrite the following text in an executive, formal, and polished professional tone suitable for high-level business correspondence. Fix all grammar and elevate vocabulary.
@@ -409,7 +435,7 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
   // 1. Fetch settings in parallel
   const [proInfo, syncData] = await Promise.all([
     getProStatus(),
-    chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'maxOutputTokens'])
+    chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'maxOutputTokens', 'stylePresets'])
   ]);
   const isPro = proInfo.isPro;
 
@@ -477,7 +503,7 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
 
     // 4. Make the API call to Gemini with timeout protection
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-    const promptText = buildPromptForStyle(text, style, customPrompt);
+    const promptText = buildPromptForStyle(text, style, customPrompt, syncData.stylePresets || []);
     const rawTokens = typeof syncData.maxOutputTokens !== 'undefined' ? Number(syncData.maxOutputTokens) : 0;
     const userMaxTokens = isNaN(rawTokens) ? 0 : rawTokens;
 

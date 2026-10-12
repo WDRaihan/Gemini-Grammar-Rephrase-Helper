@@ -495,7 +495,7 @@
             border: 1px solid #e2e8f0;
         }
 
-        .toggle-switch {
+        .toggle-switch, .switch {
             position: relative;
             display: inline-block;
             width: 40px;
@@ -504,7 +504,7 @@
             margin-top: 2px;
         }
 
-        .toggle-switch input {
+        .toggle-switch input, .switch input {
             opacity: 0;
             width: 0;
             height: 0;
@@ -640,6 +640,103 @@
             border-radius: 6px;
             font-weight: 500;
         }
+
+        /* Preset Items & Creator */
+        .preset-item-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 14px;
+            background-color: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            gap: 12px;
+            transition: border-color 0.15s;
+        }
+
+        .preset-item-card:hover {
+            border-color: #cbd5e1;
+        }
+
+        .preset-item-main {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .preset-item-title {
+            font-size: 13.5px;
+            font-weight: 600;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .preset-item-prompt {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 3px;
+            line-height: 1.45;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .preset-item-actions {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .btn-delete-preset {
+            background-color: #ffffff;
+            border: 1px solid #fecaca;
+            color: #dc2626;
+            border-radius: 6px;
+            padding: 5px 9px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-delete-preset:hover {
+            background-color: #fee2e2;
+            border-color: #f87171;
+        }
+
+        .create-preset-box {
+            background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+            border: 1px solid #bfdbfe;
+            border-radius: var(--radius-md);
+            padding: 16px 18px;
+            margin-top: 14px;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: var(--radius-md);
+            font-size: 13.5px;
+            box-sizing: border-box;
+            background-color: #fff;
+            color: var(--text-main);
+            font-family: inherit;
+            resize: vertical;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
     </style>
 </head>
 <body>
@@ -676,6 +773,9 @@
             </button>
             <button type="button" class="tab-btn" data-tab="tokens" role="tab">
                 <span class="tab-icon">⚡</span> Token Limits
+            </button>
+            <button type="button" class="tab-btn" data-tab="presets" role="tab">
+                <span class="tab-icon">🎨</span> Style Presets
             </button>
             <button type="button" class="tab-btn" data-tab="pro" role="tab">
                 <span class="tab-icon">⭐</span> Pro Plan
@@ -804,6 +904,88 @@
 
                 <div class="smart-pill" style="margin-top: 14px;">
                     <span>🛡️ Smart LRU Caching Active:</span> Identical text phrases are served locally from memory without burning API quota.
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 4: Style Presets Management (Pro Feature) -->
+        <div id="tab-presets" class="tab-panel" role="tabpanel">
+            <!-- Pro Gate Alert (Displayed when user is Free) -->
+            <div id="presets-pro-lock" class="card card-pro" style="display: none;">
+                <div class="card-header" style="border-bottom-color: #dbeafe;">
+                    <h2 class="card-title" style="color: #1e3a8a;">
+                        <span class="icon">🔒</span> Pro Feature: Custom Style Presets
+                    </h2>
+                    <span class="pro-badge">Pro Required</span>
+                </div>
+                <p style="font-size: 13px; color: #334155; line-height: 1.5; margin: 0 0 14px 0;">
+                    Controlling and creating custom writing transformation presets is an exclusive Pro feature. Upgrade to Pro or enter your license key to enable/disable presets and create unlimited AI prompt presets.
+                </p>
+                <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                    <a href="https://checkout.freemius.com/?plugin_id=41271&pricing_id=98283" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 9px 18px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+                        Upgrade to Pro ↗
+                    </a>
+                    <button type="button" id="switch-to-pro-tab-btn" class="btn-detect" style="padding: 9px 15px;">
+                        Enter License Key
+                    </button>
+                </div>
+            </div>
+
+            <!-- Presets Manager (Displayed when user is Pro) -->
+            <div id="presets-manager" class="card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title"><span class="icon">🎨</span> Manage Style Presets</h2>
+                        <div class="help-text" style="margin-top: 3px;">
+                            Enable, disable, or create custom writing transformation styles for your suggestion popup toolbar.
+                        </div>
+                    </div>
+                    <span id="presets-pro-indicator" class="smart-pill">⭐ Pro Active</span>
+                </div>
+
+                <!-- Section 1: Built-in Presets -->
+                <div style="margin-bottom: 22px;">
+                    <h3 style="font-size: 14px; font-weight: 700; color: var(--text-main); margin: 0 0 10px 0;">
+                        Available Built-in Presets
+                    </h3>
+                    <div id="builtin-presets-list" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+
+                <!-- Section 2: Custom Presets -->
+                <div style="margin-bottom: 22px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 style="font-size: 14px; font-weight: 700; color: var(--text-main); margin: 0;">
+                            Custom Presets
+                        </h3>
+                        <span id="custom-presets-count" style="font-size: 12px; color: var(--text-muted); font-weight: 500;">
+                            0 custom presets
+                        </span>
+                    </div>
+                    <div id="custom-presets-list" style="display: flex; flex-direction: column; gap: 10px;">
+                        <!-- Rendered dynamically -->
+                    </div>
+                </div>
+
+                <!-- Section 3: Add New Preset Form -->
+                <div class="create-preset-box">
+                    <h3 style="font-size: 14px; font-weight: 700; color: #1e3a8a; margin: 0 0 12px 0; display: flex; align-items: center; gap: 6px;">
+                        <span>➕</span> Create New Preset
+                    </h3>
+                    <div class="form-group" style="margin-bottom: 12px;">
+                        <label for="new-preset-label">Preset Label</label>
+                        <input type="text" id="new-preset-label" placeholder="e.g. Academic Tone, Executive Summary, LinkedIn Hook..." maxlength="40">
+                        <div class="help-text">Name displayed on the button in the suggestion toolbar.</div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 14px;">
+                        <label for="new-preset-prompt">AI Prompt Instruction</label>
+                        <textarea id="new-preset-prompt" rows="3" placeholder="e.g. Rewrite the text in an authoritative, scholarly academic tone with advanced vocabulary and formal syntax while keeping the original arguments intact."></textarea>
+                        <div class="help-text">Instructions sent to Gemini. Describe the tone, audience, and style required.</div>
+                    </div>
+                    <button type="button" id="add-preset-btn" class="header-btn" style="background-color: var(--primary); color: white;">
+                        Save New Preset
+                    </button>
                 </div>
             </div>
         </div>
