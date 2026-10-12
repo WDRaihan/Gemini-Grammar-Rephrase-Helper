@@ -51,7 +51,7 @@ if (chrome.action?.onClicked) {
 
 // Helper to check if a URL is restricted from extension scripting
 function isRestrictedUrl(url) {
-  return !url || url.startsWith("chrome://") || url.startsWith("edge://") || url.startsWith("about:") || url.includes("chromewebstore.google.com");
+  return !url || url.startsWith("chrome://") || url.startsWith("edge://") || url.startsWith("about:") || url.includes("chromewebstore.google.com") || url.includes("addons.mozilla.org");
 }
 
 // 1. Right-Click Context Menu Handler
