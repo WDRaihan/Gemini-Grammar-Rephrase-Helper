@@ -30,7 +30,16 @@ async function setupContextMenu() {
   });
 }
 
-chrome.runtime.onInstalled.addListener(setupContextMenu);
+const WELCOME_URL = "https://ggrh.atplugins.com/";
+
+chrome.runtime.onInstalled.addListener((details) => {
+  setupContextMenu();
+
+  // Redirect user to welcome website on fresh installation only
+  if (details.reason === 'install') {
+    chrome.tabs.create({ url: WELCOME_URL });
+  }
+});
 chrome.runtime.onStartup.addListener(setupContextMenu);
 
 // Open options page when user clicks the extension toolbar icon
