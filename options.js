@@ -3,14 +3,49 @@
 const apiKeyInput = document.getElementById('api-key');
 const modelSelect = document.getElementById('model-select');
 const autoCheckToggle = document.getElementById('auto-check-toggle');
+const debounceSelect = document.getElementById('debounce-select');
+const maxTokensSelect = document.getElementById('max-tokens-select');
+const autoCheckSubSettings = document.getElementById('auto-check-sub-settings');
+const toggleKeyVisibilityBtn = document.getElementById('toggle-key-visibility');
 const saveButton = document.getElementById('save-btn');
 const testButton = document.getElementById('test-btn');
 const detectButton = document.getElementById('detect-btn');
 const statusDiv = document.getElementById('status');
 
+// Toggle API key visibility (password vs text)
+if (toggleKeyVisibilityBtn && apiKeyInput) {
+  toggleKeyVisibilityBtn.addEventListener('click', () => {
+    if (apiKeyInput.type === 'password') {
+      apiKeyInput.type = 'text';
+      toggleKeyVisibilityBtn.textContent = 'Hide';
+    } else {
+      apiKeyInput.type = 'password';
+      toggleKeyVisibilityBtn.textContent = 'Show';
+    }
+  });
+}
+
+// Update sub-settings visual enabled/disabled appearance
+function updateSubSettingsState(enabled) {
+  if (!autoCheckSubSettings) return;
+  if (enabled) {
+    autoCheckSubSettings.style.opacity = '1';
+    autoCheckSubSettings.style.pointerEvents = 'auto';
+  } else {
+    autoCheckSubSettings.style.opacity = '0.5';
+    autoCheckSubSettings.style.pointerEvents = 'none';
+  }
+}
+
+if (autoCheckToggle) {
+  autoCheckToggle.addEventListener('change', (e) => {
+    updateSubSettingsState(e.target.checked);
+  });
+}
+
 // Load saved settings
 function loadOptions() {
-  chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'autoCheckEnabled'], (result) => {
+  chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'autoCheckEnabled', 'maxOutputTokens', 'autoCheckDebounce'], (result) => {
     if (result.geminiApiKey) {
       apiKeyInput.value = result.geminiApiKey;
     }
@@ -18,8 +53,20 @@ function loadOptions() {
       ensureOptionExists(result.geminiModel);
       modelSelect.value = result.geminiModel;
     }
+    const autoCheckOn = result.autoCheckEnabled === true;
     if (autoCheckToggle) {
-      autoCheckToggle.checked = result.autoCheckEnabled === true;
+      autoCheckToggle.checked = autoCheckOn;
+      updateSubSettingsState(autoCheckOn);
+    }
+    if (debounceSelect && result.autoCheckDebounce) {
+      debounceSelect.value = String(result.autoCheckDebounce);
+    }
+    if (maxTokensSelect) {
+      if (typeof result.maxOutputTokens !== 'undefined') {
+        maxTokensSelect.value = String(result.maxOutputTokens);
+      } else {
+        maxTokensSelect.value = "0"; // Default: No Limit
+      }
     }
   });
 }
@@ -59,6 +106,9 @@ function saveOptions() {
   const apiKey = apiKeyInput.value.trim();
   const model = modelSelect.value;
   const autoCheckEnabled = autoCheckToggle ? autoCheckToggle.checked : false;
+  const autoCheckDebounce = debounceSelect ? Number(debounceSelect.value) || 2500 : 2500;
+  const rawMaxTokens = maxTokensSelect ? Number(maxTokensSelect.value) : 0;
+  const maxOutputTokens = isNaN(rawMaxTokens) ? 0 : rawMaxTokens;
 
   if (!apiKey) {
     showStatus('Please enter an API key.', '#dc3545');
@@ -68,9 +118,11 @@ function saveOptions() {
   chrome.storage.sync.set({
     geminiApiKey: apiKey,
     geminiModel: model,
-    autoCheckEnabled: autoCheckEnabled
+    autoCheckEnabled: autoCheckEnabled,
+    autoCheckDebounce: autoCheckDebounce,
+    maxOutputTokens: maxOutputTokens
   }, () => {
-    showStatus('Settings saved successfully!', '#28a745');
+    showStatus('Settings saved successfully! Token & performance preferences applied.', '#28a745');
   });
 }
 

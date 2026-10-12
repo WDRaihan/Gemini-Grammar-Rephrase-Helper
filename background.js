@@ -169,6 +169,11 @@ function formatFriendlyErrorMessage(rawError) {
     return "This model does not support formatted responses. Please switch to a recommended Flash model in Options.";
   }
 
+  // 9. Token limit reached / Response cut off midway
+  if (lower.includes("could not parse json") || lower.includes("max_tokens") || lower.includes("token limit")) {
+    return "Gemini response was interrupted before completion. This happens when 'Max Output Tokens' is set too low. Please switch to 'No Limit' in Extension Preferences.";
+  }
+
   // 9. Generic clean-up: remove raw URLs and technical wrappers like "Gemini API Error ( ... )"
   let cleanMsg = err
     .replace(/^Gemini API Error\s*\(/i, '')
@@ -404,7 +409,7 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
   // 1. Fetch settings in parallel
   const [proInfo, syncData] = await Promise.all([
     getProStatus(),
-    chrome.storage.sync.get(['geminiApiKey', 'geminiModel'])
+    chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'maxOutputTokens'])
   ]);
   const isPro = proInfo.isPro;
 
@@ -473,30 +478,39 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
     // 4. Make the API call to Gemini with timeout protection
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
     const promptText = buildPromptForStyle(text, style, customPrompt);
+    const rawTokens = typeof syncData.maxOutputTokens !== 'undefined' ? Number(syncData.maxOutputTokens) : 0;
+    const userMaxTokens = isNaN(rawTokens) ? 0 : rawTokens;
+
+    const generationConfig = {
+      temperature: 0.2,
+      response_mime_type: "application/json",
+      response_schema: {
+        type: "OBJECT",
+        properties: {
+          grammar_fix: {
+            type: "STRING",
+            description: "Primary corrected or rephrased version according to requested style."
+          },
+          rephrases: {
+            type: "ARRAY",
+            items: { type: "STRING" },
+            description: "Two alternative rephrased variations."
+          }
+        },
+        required: ["grammar_fix", "rephrases"]
+      }
+    };
+
+    // If userMaxTokens > 0, cap output to conserve quota; if 0 (No Limit), allow full native model length
+    if (userMaxTokens > 0) {
+      generationConfig.max_output_tokens = userMaxTokens;
+    }
 
     const payload = {
       contents: [{
         parts: [{ text: promptText }]
       }],
-      generationConfig: {
-        temperature: 0.2,
-        response_mime_type: "application/json",
-        response_schema: {
-          type: "OBJECT",
-          properties: {
-            grammar_fix: {
-              type: "STRING",
-              description: "Primary corrected or rephrased version according to requested style."
-            },
-            rephrases: {
-              type: "ARRAY",
-              items: { type: "STRING" },
-              description: "Two alternative rephrased variations."
-            }
-          },
-          required: ["grammar_fix", "rephrases"]
-        }
-      }
+      generationConfig
     };
 
     const controller = new AbortController();
@@ -535,13 +549,17 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
 
     const responseData = await response.json();
     const candidate = responseData.candidates?.[0];
+    const finishReason = candidate?.finishReason || 'UNKNOWN';
 
-    // Check if output was blocked by safety filters
+    // Check if output was blocked by safety filters or finished due to max tokens
     if (!candidate?.content?.parts?.[0]?.text) {
-      if (candidate?.finishReason === "SAFETY") {
-        throw new Error("Gemini blocked this request due to safety policies.");
+      if (finishReason === "SAFETY") {
+        throw new Error("Gemini blocked this request due to content safety policies.");
       }
-      throw new Error(`Empty response from Gemini API (finish reason: ${candidate?.finishReason || 'UNKNOWN'}).`);
+      if (finishReason === "MAX_TOKENS") {
+        throw new Error("Token limit reached: Gemini was cut off because 'Max Output Tokens' was set too low. Please switch to 'No Limit' in Extension Preferences.");
+      }
+      throw new Error(`Empty response from Gemini API (finish reason: ${finishReason}).`);
     }
 
     // Clean potential markdown code blocks before JSON parsing
@@ -550,33 +568,51 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
       rawText = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
     }
 
-    let resultJson;
+    let resultJson = null;
     try {
       resultJson = JSON.parse(rawText);
     } catch (_) {
       const match = rawText.match(/\{[\s\S]*\}/);
       if (match) {
-        resultJson = JSON.parse(match[0]);
-      } else {
-        throw new Error("Could not parse JSON response from Gemini.");
+        try {
+          resultJson = JSON.parse(match[0]);
+        } catch (_) {}
       }
     }
 
     const suggestions = [];
-    const grammarFix = resultJson.grammar_fix || resultJson.grammarFix || resultJson.correction;
-    if (grammarFix) {
-      suggestions.push(grammarFix);
-    }
 
-    const rephrases = resultJson.rephrases || resultJson.alternatives || [];
-    if (Array.isArray(rephrases)) {
-      suggestions.push(...rephrases);
-    } else if (typeof rephrases === 'string') {
-      suggestions.push(rephrases);
+    if (resultJson) {
+      const grammarFix = resultJson.grammar_fix || resultJson.grammarFix || resultJson.correction;
+      if (grammarFix) suggestions.push(grammarFix);
+
+      const rephrases = resultJson.rephrases || resultJson.alternatives || [];
+      if (Array.isArray(rephrases)) {
+        suggestions.push(...rephrases);
+      } else if (typeof rephrases === 'string') {
+        suggestions.push(rephrases);
+      }
+    } else {
+      // Partial salvage attempt: if JSON was cut off midway by MAX_TOKENS, extract what was completed!
+      const grammarMatch = rawText.match(/"grammar_fix"\s*:\s*"((?:[^"\\]|\\.)*)"/i);
+      if (grammarMatch && grammarMatch[1]) {
+        suggestions.push(grammarMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n'));
+      }
+
+      const rephrasesBlockMatch = rawText.match(/"rephrases"\s*:\s*\[([\s\S]*)/i);
+      if (rephrasesBlockMatch && rephrasesBlockMatch[1]) {
+        const itemMatches = [...rephrasesBlockMatch[1].matchAll(/"((?:[^"\\]|\\.)*)"/g)];
+        itemMatches.forEach(m => {
+          if (m[1]) suggestions.push(m[1].replace(/\\"/g, '"').replace(/\\n/g, '\n'));
+        });
+      }
     }
 
     if (suggestions.length === 0) {
-      throw new Error("No suggestions were returned by the model.");
+      if (finishReason === "MAX_TOKENS") {
+        throw new Error("Token limit reached: Gemini was cut off because 'Max Output Tokens' was set too low. Please switch to 'No Limit' in Extension Preferences.");
+      }
+      throw new Error("Could not parse JSON response from Gemini. Please ensure 'Max Output Tokens' is set to 'No Limit' in Extension Preferences.");
     }
 
     // 6. Send suggestions to content script with style context
@@ -669,7 +705,7 @@ async function handleAutoCheckGrammar(text) {
   }
 
   // Retrieve API key and model preference
-  const data = await chrome.storage.sync.get(['geminiApiKey', 'geminiModel']);
+  const data = await chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'maxOutputTokens']);
   const apiKey = data.geminiApiKey?.trim();
   if (!apiKey) {
     return { hasErrors: false, error: 'NO_API_KEY' };
@@ -687,6 +723,10 @@ If the text has no mistakes or is already grammatically sound, set has_errors to
 Text to inspect:
 ${JSON.stringify(cleanText)}`;
 
+  const rawTokens = typeof data.maxOutputTokens !== 'undefined' ? Number(data.maxOutputTokens) : 0;
+  const userMaxTokens = isNaN(rawTokens) ? 0 : rawTokens;
+  const autoCheckMaxTokens = userMaxTokens > 0 ? Math.min(userMaxTokens, 300) : 300;
+
   const payload = {
     contents: [
       {
@@ -695,6 +735,7 @@ ${JSON.stringify(cleanText)}`;
     ],
     generationConfig: {
       temperature: 0.1,
+      max_output_tokens: autoCheckMaxTokens,
       response_mime_type: "application/json",
       response_schema: {
         type: "OBJECT",

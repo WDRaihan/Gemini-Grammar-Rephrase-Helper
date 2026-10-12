@@ -504,6 +504,7 @@ async function copyToClipboard(text, button) {
    ========================================================================== */
 
 let isAutoCheckEnabled = false;
+let autoCheckDebounce = 2500;
 let activeInputElement = null;
 let inlineDebounceTimer = null;
 let currentInlineCorrection = null;
@@ -511,17 +512,25 @@ let activeInlineBadge = null;
 let activeInlinePopover = null;
 
 // Initialize setting from storage
-chrome.storage.sync.get(['autoCheckEnabled'], (result) => {
+chrome.storage.sync.get(['autoCheckEnabled', 'autoCheckDebounce'], (result) => {
   isAutoCheckEnabled = result.autoCheckEnabled === true;
+  if (result.autoCheckDebounce) {
+    autoCheckDebounce = Number(result.autoCheckDebounce) || 2500;
+  }
 });
 
 // Update when user toggles setting in options
 chrome.storage.onChanged.addListener((changes, area) => {
-  if (area === 'sync' && changes.autoCheckEnabled) {
-    isAutoCheckEnabled = Boolean(changes.autoCheckEnabled.newValue);
-    if (!isAutoCheckEnabled) {
-      removeInlineBadge();
-      removeInlinePopover();
+  if (area === 'sync') {
+    if (changes.autoCheckEnabled) {
+      isAutoCheckEnabled = Boolean(changes.autoCheckEnabled.newValue);
+      if (!isAutoCheckEnabled) {
+        removeInlineBadge();
+        removeInlinePopover();
+      }
+    }
+    if (changes.autoCheckDebounce) {
+      autoCheckDebounce = Number(changes.autoCheckDebounce.newValue) || 2500;
     }
   }
 });
@@ -751,7 +760,7 @@ function scheduleInlineCheck(el) {
   ensureInlineBadge();
   updateBadgePosition();
 
-  // Wait 1.8 seconds after user finishes typing
+  // Wait debounce delay after user finishes typing
   inlineDebounceTimer = setTimeout(async () => {
     const currentText = getFieldText(el).trim();
     if (currentText.length < 15) return;
@@ -783,7 +792,7 @@ function scheduleInlineCheck(el) {
     } catch (_) {
       removeInlineBadge();
     }
-  }, 1800);
+  }, autoCheckDebounce);
 }
 
 // Global delegated event listeners for real-time checking

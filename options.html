@@ -5,214 +5,659 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gemini Helper Settings</title>
     <style>
+        :root {
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --bg-page: #f8fafc;
+            --card-bg: #ffffff;
+            --border-color: #e2e8f0;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --text-sub: #334155;
+            --success: #16a34a;
+            --warning: #d97706;
+            --danger: #dc2626;
+            --radius-md: 10px;
+            --radius-lg: 14px;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f0f2f5;
+            background-color: var(--bg-page);
+            color: var(--text-main);
             margin: 0;
-            padding: 20px;
+            padding: 30px 20px 60px;
             display: flex;
             justify-content: center;
-            align-items: center;
+            align-items: flex-start;
             min-height: 100vh;
             box-sizing: border-box;
         }
+
         .container {
-            background-color: white;
-            padding: 32px 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
             width: 100%;
-            max-width: 540px;
+            max-width: 620px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
-        h1 {
-            color: #1a1a1a;
-            font-size: 22px;
+
+        /* Header */
+        .page-header {
             text-align: center;
-            margin-top: 0;
-            margin-bottom: 24px;
+            margin-bottom: 6px;
         }
+
+        .header-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            background-color: #eff6ff;
+            color: var(--primary);
+            font-size: 12px;
+            font-weight: 600;
+            border-radius: 20px;
+            margin-bottom: 8px;
+            border: 1px solid #bfdbfe;
+        }
+
+        .page-header h1 {
+            color: var(--text-main);
+            font-size: 24px;
+            font-weight: 700;
+            margin: 0 0 6px 0;
+            letter-spacing: -0.3px;
+        }
+
+        .page-header p {
+            color: var(--text-muted);
+            font-size: 14px;
+            margin: 0;
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--card-bg);
+            border-radius: var(--radius-lg);
+            padding: 24px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.02);
+            border: 1px solid var(--border-color);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .card-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0;
+        }
+
+        .card-title svg, .card-title .icon {
+            font-size: 18px;
+        }
+
+        /* Form Controls */
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 18px;
         }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
         label {
             display: block;
-            margin-bottom: 8px;
-            font-weight: 500;
-            color: #444;
-            font-size: 14px;
-            line-height: 1.4;
+            margin-bottom: 7px;
+            font-weight: 600;
+            color: var(--text-sub);
+            font-size: 13.5px;
         }
-        input[type="password"], select {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
-            font-size: 15px;
-            box-sizing: border-box;
-            background-color: #fff;
-            transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        input[type="password"]:focus, select:focus {
-            outline: none;
-            border-color: #4a90e2;
-            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.2);
-        }
-        .select-row {
+
+        .input-row {
             display: flex;
             gap: 8px;
         }
-        .select-row select {
-            flex-grow: 1;
+
+        input[type="text"], input[type="password"], select {
+            width: 100%;
+            padding: 11px 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            box-sizing: border-box;
+            background-color: #fff;
+            color: var(--text-main);
+            transition: border-color 0.15s, box-shadow 0.15s;
         }
+
+        input[type="text"]:focus, input[type="password"]:focus, select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
         .btn-detect {
-            padding: 0 14px;
+            padding: 0 16px;
             font-size: 13px;
-            background-color: #e5e7eb;
-            color: #374151;
-            border: 1px solid #d1d5db;
-            border-radius: 8px;
+            background-color: #f1f5f9;
+            color: var(--text-sub);
+            border: 1px solid #cbd5e1;
+            border-radius: var(--radius-md);
             cursor: pointer;
             white-space: nowrap;
-            font-weight: 500;
+            font-weight: 600;
+            transition: all 0.15s;
         }
+
         .btn-detect:hover {
-            background-color: #d1d5db;
+            background-color: #e2e8f0;
+            color: var(--text-main);
         }
+
         .help-text {
             font-size: 12px;
-            color: #6b7280;
+            color: var(--text-muted);
             margin-top: 6px;
+            line-height: 1.45;
         }
+
         .help-text a {
-            color: #4a90e2;
+            color: var(--primary);
             text-decoration: none;
+            font-weight: 500;
         }
+
         .help-text a:hover {
             text-decoration: underline;
         }
+
+        /* Toggle Box */
+        .toggle-container {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 14px 16px;
+            background-color: #f8fafc;
+            border-radius: var(--radius-md);
+            border: 1px solid #e2e8f0;
+            margin-bottom: 16px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 42px;
+            height: 24px;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #cbd5e1;
+            transition: .25s;
+            border-radius: 24px;
+        }
+
+        .slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .25s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        input:checked + .slider {
+            background-color: var(--primary);
+        }
+
+        input:checked + .slider:before {
+            transform: translateX(18px);
+        }
+
+        .toggle-label-wrap {
+            flex: 1;
+        }
+
+        .toggle-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 3px;
+        }
+
+        .toggle-desc {
+            font-size: 12.5px;
+            color: var(--text-muted);
+            line-height: 1.45;
+            margin: 0;
+        }
+
+        /* Grid for Token Controls */
+        .settings-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+
+        @media (max-width: 540px) {
+            .settings-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        /* Pay-As-You-Go Callout Card */
+        .callout-payg {
+            background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 50%, #f0fdfa 100%);
+            border: 1px solid #a7f3d0;
+            border-radius: var(--radius-lg);
+            padding: 22px 24px;
+        }
+
+        .payg-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .payg-badge {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 3px 9px;
+            border-radius: 12px;
+            background-color: #d1fae5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .payg-title {
+            font-size: 16px;
+            font-weight: 700;
+            color: #064e3b;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 7px;
+        }
+
+        .payg-desc {
+            font-size: 13px;
+            color: #047857;
+            line-height: 1.5;
+            margin: 0 0 14px 0;
+        }
+
+        .payg-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .payg-stat-box {
+            background-color: #ffffff;
+            border: 1px solid #d1fae5;
+            border-radius: 8px;
+            padding: 10px 12px;
+            text-align: center;
+        }
+
+        .payg-stat-val {
+            font-size: 16px;
+            font-weight: 800;
+            color: #065f46;
+            margin-bottom: 2px;
+        }
+
+        .payg-stat-lbl {
+            font-size: 11px;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+        }
+
+        .payg-steps {
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 16px;
+            border: 1px solid #e6f4ea;
+        }
+
+        .payg-steps ol {
+            margin: 0;
+            padding-left: 20px;
+            font-size: 12.5px;
+            color: #1e3a2f;
+            line-height: 1.6;
+        }
+
+        .payg-steps li {
+            margin-bottom: 4px;
+        }
+
+        .payg-steps li:last-child {
+            margin-bottom: 0;
+        }
+
+        .btn-payg {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 9px 16px;
+            background-color: #059669;
+            color: white;
+            font-size: 13px;
+            font-weight: 600;
+            border-radius: 8px;
+            text-decoration: none;
+            transition: background-color 0.15s;
+            box-shadow: 0 2px 4px rgba(5, 150, 105, 0.2);
+        }
+
+        .btn-payg:hover {
+            background-color: #047857;
+        }
+
+        /* Pro Card */
+        .card-pro {
+            background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+            border: 1px solid #bfdbfe;
+        }
+
+        .pro-badge {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            padding: 3px 9px;
+            border-radius: 12px;
+            background-color: #e2e8f0;
+            color: #475569;
+        }
+
+        /* Buttons & Footer */
         .button-group {
             display: flex;
             gap: 12px;
-            margin-top: 24px;
+            margin-top: 10px;
         }
+
         button.primary-btn {
             flex: 1;
-            padding: 12px 16px;
-            border-radius: 8px;
-            font-size: 15px;
-            font-weight: 500;
+            padding: 13px 18px;
+            border-radius: var(--radius-md);
+            font-size: 14.5px;
+            font-weight: 600;
             cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
+            transition: background-color 0.15s, transform 0.1s;
             border: none;
         }
+
         button.primary-btn:active {
             transform: scale(0.99);
         }
+
         #save-btn {
-            background-color: #4a90e2;
+            background-color: var(--primary);
             color: white;
+            box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
         }
+
         #save-btn:hover {
-            background-color: #357abd;
+            background-color: var(--primary-hover);
         }
+
         #test-btn {
-            background-color: #f3f4f6;
-            color: #374151;
-            border: 1px solid #d1d5db;
+            background-color: #ffffff;
+            color: var(--text-sub);
+            border: 1px solid #cbd5e1;
         }
+
         #test-btn:hover {
-            background-color: #e5e7eb;
+            background-color: #f8fafc;
+            border-color: #94a3b8;
         }
+
         #status {
-            margin-top: 18px;
             text-align: center;
-            font-weight: 500;
-            font-size: 14px;
-            min-height: 20px;
+            font-weight: 600;
+            font-size: 13.5px;
+            min-height: 22px;
             line-height: 1.4;
             word-break: break-word;
+            padding: 4px 0;
+        }
+
+        .smart-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 11.5px;
+            color: #059669;
+            background-color: #ecfdf5;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-weight: 500;
+            margin-top: 6px;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>Gemini Helper Settings</h1>
-        
-        <div class="form-group">
-            <label for="api-key">Gemini API Key</label>
-            <input type="password" id="api-key" placeholder="Enter your Gemini API key (AIzaSy...)">
-            <div class="help-text">
-                Create a free API key at <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>.
+        <!-- Header -->
+        <div class="page-header">
+            <div class="header-badge">✦ Gemini Helper v1.2.1</div>
+            <h1>Extension Preferences</h1>
+            <p>Configure your Gemini API connection, quota optimization, and writing preferences.</p>
+        </div>
+
+        <!-- 1. API Configuration Card -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title"><span class="icon">🔑</span> Gemini API Configuration</h2>
+            </div>
+            
+            <div class="form-group">
+                <label for="api-key">Gemini API Key</label>
+                <div class="input-row">
+                    <input type="password" id="api-key" placeholder="Enter your Gemini API key (AIzaSy...)">
+                    <button type="button" id="toggle-key-visibility" class="btn-detect" title="Show or hide key">Show</button>
+                </div>
+                <div class="help-text">
+                    Get a key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer">Google AI Studio</a>. Keys are stored safely in local Chrome sync storage.
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="model-select">Gemini Model</label>
+                <div class="input-row">
+                    <select id="model-select">
+                        <option value="gemini-3.8-flash" selected>gemini-3.8-flash (Recommended - Fast & Lightweight)</option>
+                        <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                        <option value="gemini-2.0-flash">gemini-2.0-flash</option>
+                        <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+                    </select>
+                    <button type="button" id="detect-btn" class="btn-detect" title="Query your API key to find all supported models">Auto-Detect</button>
+                </div>
+                <div class="help-text">
+                    Flash models offer near-instant responses with maximum rate limits. Click <strong>Auto-Detect</strong> to discover all models available on your key.
+                </div>
             </div>
         </div>
 
-        <div class="form-group">
-            <label for="model-select">Gemini Model</label>
-            <div class="select-row">
-                <select id="model-select">
-                    <option value="gemini-3.8-flash" selected>gemini-3.8-flash (Recommended)</option>
-                    <option value="gemini-2.5-flash">gemini-2.5-flash</option>
-                    <option value="gemini-2.0-flash">gemini-2.0-flash</option>
-                    <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-                </select>
-                <button type="button" id="detect-btn" class="btn-detect" title="Query your API key to find all supported models">Auto-Detect</button>
+        <!-- 2. Token Waste & Performance Optimization Card (User Request 1) -->
+        <div class="card">
+            <div class="card-header">
+                <h2 class="card-title"><span class="icon">⚡</span> Token & Quota Optimization</h2>
+                <span style="font-size: 11.5px; font-weight: 600; color: #059669; background-color: #d1fae5; padding: 2px 8px; border-radius: 10px;">Free & Pro</span>
             </div>
-            <div class="help-text">
-                Click <strong>Auto-Detect</strong> to automatically load the models available for your API key.
-            </div>
-        </div>
 
-        <div class="form-group" style="margin-top: 20px; padding: 14px 16px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-            <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-bottom: 4px; font-weight: 600; color: #1e293b;">
-                <input type="checkbox" id="auto-check-toggle" style="width: 18px; height: 18px; cursor: pointer; accent-color: #4a90e2;">
-                <span>Auto-Check Grammar While Typing (Grammarly-Style)</span>
-            </label>
-            <div class="help-text" style="font-size: 13px; color: #475569; margin: 4px 0 0 28px; line-height: 1.5;">
-                Shows a subtle floating <strong style="color: #4a90e2;">✦</strong> badge in text fields when you finish typing, highlighting issues with 1-click direct fixes.
-            </div>
-        </div>
-
-        <div class="form-group" style="margin-top: 20px; padding: 18px 20px; background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%); border-radius: 10px; border: 1px solid #bfdbfe;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
-                <label style="margin: 0; font-size: 15px; font-weight: 700; color: #1e3a8a; display: flex; align-items: center; gap: 6px;">
-                    <span>⭐ Pro Membership & Style Presets</span>
+            <!-- Auto-Check Toggle -->
+            <div class="toggle-container">
+                <label class="toggle-switch">
+                    <input type="checkbox" id="auto-check-toggle">
+                    <span class="slider"></span>
                 </label>
-                <span id="pro-badge" style="font-size: 11px; font-weight: 700; text-transform: uppercase; padding: 3px 8px; border-radius: 12px; background-color: #e2e8f0; color: #475569;">
-                    Free Plan
-                </span>
+                <div class="toggle-label-wrap">
+                    <div class="toggle-title">Real-Time Grammar Check While Typing</div>
+                    <p class="toggle-desc">
+                        Displays a subtle floating <strong style="color: #2563eb;">✦</strong> badge in text fields when you finish typing, highlighting typos and mistakes with 1-click fixes. Disable this anytime to save 100% of background auto-tokens.
+                    </p>
+                </div>
             </div>
-            <div class="help-text" style="font-size: 13px; color: #334155; margin-bottom: 12px; line-height: 1.4;">
-                Pro unlocks Custom Prompt Presets: <strong>Make Formal</strong>, <strong>Simplify for 5th Grader</strong>, <strong>Convert to Bullet Points</strong>, <strong>Casual Slack Message</strong>, and unlimited <strong>Custom Prompts</strong>.
+
+            <div class="settings-grid" id="auto-check-sub-settings">
+                <!-- Auto-Check Debounce Delay -->
+                <div class="form-group">
+                    <label for="debounce-select">Auto-Check Typing Delay</label>
+                    <select id="debounce-select">
+                        <option value="1500">1.5s (Fast - Frequent checks)</option>
+                        <option value="2500" selected>2.5s (Balanced - Recommended)</option>
+                        <option value="3500">3.5s (Token Saver - Slower checks)</option>
+                        <option value="5000">5.0s (Max Saver - Only long pauses)</option>
+                    </select>
+                    <div class="help-text">
+                        Wait time after you pause typing before Gemini inspects text. Higher delays eliminate redundant checks.
+                    </div>
+                </div>
+
+                <!-- Max Output Tokens -->
+                <div class="form-group">
+                    <label for="max-tokens-select">Max Output Tokens Cap</label>
+                    <select id="max-tokens-select">
+                        <option value="0" selected>No Limit (Model Default - Recommended)</option>
+                        <option value="150">150 Tokens (Ultra Compact - Fastest)</option>
+                        <option value="300">300 Tokens (Balanced - Moderate Cap)</option>
+                        <option value="500">500 Tokens (Detailed Paragraphs)</option>
+                        <option value="1000">1000 Tokens (Extended Output)</option>
+                    </select>
+                    <div class="help-text">
+                        Hard cap on Gemini's generated response length. <strong>No Limit</strong> ensures responses are never truncated midway on long texts.
+                    </div>
+                </div>
+            </div>
+
+            <div class="smart-pill">
+                <span>🛡️ Smart LRU Caching Active:</span> Identical text phrases are served locally from memory without burning API quota.
+            </div>
+        </div>
+
+        <!-- 3. Guide Users to "Pay-As-You-Go" (User Request 2) -->
+        <div class="callout-payg">
+            <div class="payg-header">
+                <h3 class="payg-title"><span>💡</span> Practically Unlimited Checks with Google AI Studio Pay-As-You-Go</h3>
+                <span class="payg-badge">Pro Tip</span>
+            </div>
+            
+            <p class="payg-desc">
+                Google's free API tier enforces strict rate limits (15 requests/min and daily quota ceilings). If you write frequently, enabling Google's <strong>Pay-As-You-Go</strong> tier eliminates all daily limits for mere pennies:
+            </p>
+
+            <div class="payg-stats">
+                <div class="payg-stat-box">
+                    <div class="payg-stat-val">~$0.05</div>
+                    <div class="payg-stat-lbl">Per 1,000 Checks</div>
+                </div>
+                <div class="payg-stat-box">
+                    <div class="payg-stat-val">Unlimited</div>
+                    <div class="payg-stat-lbl">Daily Quota</div>
+                </div>
+                <div class="payg-stat-box">
+                    <div class="payg-stat-val">$300 Credit</div>
+                    <div class="payg-stat-lbl">Free Google Trial</div>
+                </div>
+            </div>
+
+            <div class="payg-steps">
+                <ol>
+                    <li>Open <strong><a href="https://aistudio.google.com/app/billing" target="_blank" rel="noreferrer" style="color: #047857; font-weight: 700; text-decoration: underline;">Google AI Studio Billing</a></strong> in your browser.</li>
+                    <li>Click <strong>"Set up billing"</strong> to link a Google Cloud billing account (new users receive $300 in free credits).</li>
+                    <li>That's it! Your API key will immediately upgrade to paid tier rates (~$0.075 / million tokens) with zero daily quota exhaustion.</li>
+                </ol>
+            </div>
+
+            <div style="display: flex; justify-content: flex-start;">
+                <a href="https://aistudio.google.com/app/billing" target="_blank" rel="noreferrer" class="btn-payg">
+                    Open Google AI Studio Billing ↗
+                </a>
+            </div>
+        </div>
+
+        <!-- 4. Pro Membership & Style Presets Card -->
+        <div class="card card-pro">
+            <div class="card-header" style="border-bottom-color: #dbeafe;">
+                <h2 class="card-title" style="color: #1e3a8a;"><span class="icon">⭐</span> Pro Membership & Custom Styles</h2>
+                <span id="pro-badge" class="pro-badge">Free Plan</span>
+            </div>
+
+            <div class="help-text" style="font-size: 13px; color: #334155; margin-bottom: 14px; line-height: 1.5;">
+                Pro unlocks instant writing transformations: <strong>Make Formal</strong>, <strong>Simplify for 5th Grader</strong>, <strong>Convert to Bullet Points</strong>, <strong>Casual Slack Message</strong>, and unlimited <strong>Custom Prompts</strong>.
             </div>
 
             <!-- Upgrade Link -->
-            <div id="pro-upgrade-box" style="margin-bottom: 12px;">
-                <a id="buy-pro-btn" href="https://checkout.freemius.com/?plugin_id=41271&pricing_id=98283" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 8px 16px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; border-radius: 6px; font-size: 13px; font-weight: 600; text-decoration: none; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
-                    Upgrade to Pro
+            <div id="pro-upgrade-box" style="margin-bottom: 14px;">
+                <a id="buy-pro-btn" href="https://checkout.freemius.com/?plugin_id=41271&pricing_id=98283" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 9px 18px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+                    Upgrade to Pro ↗
                 </a>
             </div>
 
             <!-- License Activation Input -->
             <div style="display: flex; gap: 8px; align-items: center;">
-                <input type="text" id="fs-license-key" placeholder="Enter your license key (e.g. fs_lic_...)" style="flex: 1; padding: 9px 12px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 13px; box-sizing: border-box;">
-                <button type="button" id="activate-license-btn" class="btn-detect" style="padding: 9px 14px; background-color: #2563eb; color: white; border-color: #2563eb;">Activate</button>
-                <button type="button" id="deactivate-license-btn" class="btn-detect" style="padding: 9px 14px; display: none; background-color: #ef4444; color: white; border-color: #ef4444;">Deactivate</button>
+                <input type="text" id="fs-license-key" placeholder="Enter your license key (e.g. fs_lic_...)" style="flex: 1; padding: 10px 12px; font-size: 13px;">
+                <button type="button" id="activate-license-btn" class="btn-detect" style="padding: 10px 16px; background-color: #2563eb; color: white; border-color: #2563eb;">Activate</button>
+                <button type="button" id="deactivate-license-btn" class="btn-detect" style="padding: 10px 16px; display: none; background-color: #ef4444; color: white; border-color: #ef4444;">Deactivate</button>
             </div>
             
             <div style="margin-top: 8px; font-size: 12px; color: #64748b;">
-                <span id="license-status-text">Enter your license key to unlock custom prompt presets.</span>
+                <span id="license-status-text">Enter your license key above to unlock custom prompt presets.</span>
             </div>
         </div>
 
-        <div class="form-group" style="margin-top: 16px; padding: 14px 16px; background-color: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
-            <label style="font-weight: 600; color: #1e293b; margin-bottom: 4px;">Keyboard Shortcut</label>
-            <div class="help-text" style="font-size: 13px; color: #475569; margin: 0; line-height: 1.5;">
-                Select text and press <strong style="color: #0f172a;">Alt + Shift + G</strong> (or <strong style="color: #0f172a;">Option + Shift + G</strong> on Mac) to open suggestions without right-clicking.
-                <br>
-                Customize shortcuts in Chrome at <code style="background: #e2e8f0; padding: 2px 5px; border-radius: 4px;">chrome://extensions/shortcuts</code>.
+        <!-- 5. Keyboard Shortcut Guide Card -->
+        <div class="card" style="padding: 18px 24px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <h3 style="margin: 0 0 4px 0; font-size: 14px; font-weight: 600; color: var(--text-main);">⌨️ Keyboard Shortcut</h3>
+                    <p style="margin: 0; font-size: 12.5px; color: var(--text-muted);">
+                        Select any text on any page and press <strong style="color: var(--text-main);">Alt + Shift + G</strong> (or <strong style="color: var(--text-main);">Option + Shift + G</strong> on Mac) to open suggestions instantly.
+                    </p>
+                </div>
+                <a href="chrome://extensions/shortcuts" target="_blank" style="font-size: 12px; color: var(--primary); text-decoration: none; font-weight: 600; white-space: nowrap; margin-left: 12px;">Customize ↗</a>
             </div>
         </div>
 
+        <!-- Save & Test Actions -->
         <div class="button-group">
             <button id="save-btn" class="primary-btn">Save Settings</button>
             <button id="test-btn" class="primary-btn">Test Connection</button>
