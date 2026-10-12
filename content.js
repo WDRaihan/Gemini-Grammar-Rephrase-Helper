@@ -325,9 +325,6 @@ function showProUpgradeBanner() {
       <a href="${FREEMIUS_CHECKOUT_URL}" target="_blank" rel="noopener noreferrer" class="gemini-btn-buy-pro">
         Upgrade to Pro
       </a>
-      <button type="button" class="gemini-btn-activate-link" id="gemini-toggle-key-input">
-        Enter license key
-      </button>
       <div style="font-size: 12px; color: #475569; display: inline-flex; align-items: center; gap: 5px;">
         <span>Already purchased?</span>
         <a href="https://customers.freemius.com/" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline; font-weight: 500;">
@@ -335,7 +332,7 @@ function showProUpgradeBanner() {
         </a>
       </div>
     </div>
-    <div class="gemini-pro-inline-activate" id="gemini-pro-key-row" style="display: none;">
+    <div class="gemini-pro-inline-activate" id="gemini-pro-key-row">
       <input type="text" id="gemini-banner-license-key" placeholder="Enter your license key (e.g. fs_lic_...)" />
       <button type="button" id="gemini-banner-activate-btn">Activate</button>
     </div>
@@ -346,16 +343,10 @@ function showProUpgradeBanner() {
 
   banner.querySelector('.gemini-pro-banner-close').addEventListener('click', () => banner.remove());
   
-  const toggleBtn = banner.querySelector('#gemini-toggle-key-input');
   const keyRow = banner.querySelector('#gemini-pro-key-row');
   const activateBtn = banner.querySelector('#gemini-banner-activate-btn');
   const keyInput = banner.querySelector('#gemini-banner-license-key');
   const statusEl = banner.querySelector('#gemini-banner-key-status');
-
-  toggleBtn.addEventListener('click', () => {
-    keyRow.style.display = keyRow.style.display === 'none' ? 'flex' : 'none';
-    if (keyRow.style.display === 'flex') keyInput.focus();
-  });
 
   activateBtn.addEventListener('click', async () => {
     const key = keyInput.value.trim();
