@@ -454,6 +454,261 @@ ${JSON.stringify(text)}`;
   }
 }
 
+/**
+ * Chrome Built-in AI (Prompt API / Gemini Nano) Integration
+ */
+
+function buildBuiltInAIPrompt(text, style = 'default', customPrompt = '', storedPresets = []) {
+  let instruction = "Correct all grammar, spelling, and punctuation errors. Keep the original meaning and natural tone.";
+  
+  if (Array.isArray(storedPresets) && storedPresets.length > 0) {
+    const matched = storedPresets.find(p => p.id === style);
+    if (matched && matched.prompt) {
+      instruction = matched.prompt.trim();
+    }
+  }
+
+  if (instruction === "Correct all grammar, spelling, and punctuation errors. Keep the original meaning and natural tone.") {
+    switch (style) {
+      case 'formal':
+        instruction = "Rewrite the text in an executive, formal, and polished professional tone suitable for business correspondence. Fix all grammar.";
+        break;
+      case 'simplify':
+        instruction = "Rewrite the text so that an elementary school student (5th grader) can effortlessly understand it. Use simple words.";
+        break;
+      case 'bullets':
+        instruction = "Convert the key ideas and points into clear, readable bullet points (using • symbol).";
+        break;
+      case 'slack':
+        instruction = "Rewrite as a casual, warm, and natural workplace chat message (ideal for Slack, Teams, or Discord).";
+        break;
+      case 'custom':
+        instruction = customPrompt.trim() || "Improve clarity, tone, and grammar.";
+        break;
+    }
+  }
+
+  return `You are an expert AI grammar and writing assistant.
+Task: ${instruction}
+
+Original text:
+${JSON.stringify(text)}
+
+Provide:
+1. One primary version fulfilling this instruction.
+2. Two alternative variations fulfilling the instruction in slightly different ways.
+
+Respond strictly in valid JSON matching this schema:
+{
+  "grammar_fix": "primary version",
+  "rephrases": [
+    "first variation",
+    "second variation"
+  ]
+}`;
+}
+
+function buildBuiltInAIAutoCheckPrompt(text) {
+  return `You are a real-time grammar and spell checker. Analyze the following text carefully:
+${JSON.stringify(text)}
+
+If there are any spelling, punctuation, or grammar errors, set has_errors to true and provide the corrected_text.
+If the text has no mistakes or is already grammatically sound, set has_errors to false and return the original text as corrected_text.
+
+Respond strictly in valid JSON format:
+{
+  "has_errors": true,
+  "corrected_text": "text with errors fixed",
+  "explanation": "Short 1-sentence note of corrections"
+}`;
+}
+
+/**
+ * Executes a prompt using Chrome's built-in AI (Prompt API / Gemini Nano).
+ * First checks service worker scope (Chrome 138+ / flags), then falls back to tab script execution.
+ */
+async function executePromptWithBuiltInAI(promptText, tab) {
+  // Helper to check availability and create session on any Prompt API interface
+  const runModelSession = async (ModelAPI) => {
+    let isAvailable = false;
+    if (typeof ModelAPI.availability === 'function') {
+      const avail = await ModelAPI.availability();
+      isAvailable = (avail !== 'no' && avail !== 'unavailable');
+    } else if (typeof ModelAPI.capabilities === 'function') {
+      const caps = await ModelAPI.capabilities();
+      isAvailable = (caps && caps.available !== 'no' && caps.available !== 'unavailable');
+    } else {
+      isAvailable = true;
+    }
+
+    if (!isAvailable) {
+      throw new Error("PROMPT_API_UNAVAILABLE");
+    }
+
+    const session = await ModelAPI.create();
+    try {
+      return await session.prompt(promptText);
+    } finally {
+      try { session.destroy(); } catch (_) {}
+    }
+  };
+
+  // 1. Try background Service Worker scope
+  const workerScope = typeof self !== 'undefined' ? self : (typeof globalThis !== 'undefined' ? globalThis : {});
+  const WorkerModelAPI = workerScope.LanguageModel || workerScope.ai?.languageModel;
+  if (WorkerModelAPI) {
+    try {
+      return await runModelSession(WorkerModelAPI);
+    } catch (swErr) {
+      console.warn("Service worker Prompt API attempt failed, checking tab context:", swErr);
+    }
+  }
+
+  // 2. Try in active tab context via chrome.scripting.executeScript
+  if (tab?.id && !isRestrictedUrl(tab.url)) {
+    try {
+      const [result] = await chrome.scripting.executeScript({
+        target: { tabId: tab.id },
+        func: async (pText) => {
+          const tabScope = typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : {});
+          const TabModelAPI = tabScope.LanguageModel || tabScope.ai?.languageModel;
+          if (!TabModelAPI) {
+            throw new Error("PROMPT_API_UNSUPPORTED");
+          }
+
+          let isAvail = false;
+          if (typeof TabModelAPI.availability === 'function') {
+            const avail = await TabModelAPI.availability();
+            isAvail = (avail !== 'no' && avail !== 'unavailable');
+          } else if (typeof TabModelAPI.capabilities === 'function') {
+            const caps = await TabModelAPI.capabilities();
+            isAvail = (caps && caps.available !== 'no' && caps.available !== 'unavailable');
+          } else {
+            isAvail = true;
+          }
+
+          if (!isAvail) {
+            throw new Error("PROMPT_API_UNAVAILABLE");
+          }
+
+          const session = await TabModelAPI.create();
+          try {
+            return await session.prompt(pText);
+          } finally {
+            try { session.destroy(); } catch (_) {}
+          }
+        },
+        args: [promptText]
+      });
+
+      if (result && typeof result.result === 'string') {
+        return result.result;
+      }
+    } catch (tabErr) {
+      if (tabErr.message?.includes("PROMPT_API_UNSUPPORTED")) {
+        throw new Error("Chrome Built-in AI (Prompt API) is not enabled in this browser. Please enable '#prompt-api-for-gemini-nano' and '#optimization-guide-on-device-model' in chrome://flags.");
+      }
+      if (tabErr.message?.includes("PROMPT_API_UNAVAILABLE")) {
+        throw new Error("Chrome Built-in AI model is currently unavailable or downloading. Please check chrome://components for 'Optimization Guide On Device Model'.");
+      }
+      throw tabErr;
+    }
+  }
+
+  throw new Error("Chrome Built-in AI is not available in this browser. Please enable Prompt API flags in chrome://flags or use your Gemini API key.");
+}
+
+function parseBuiltInAISuggestions(rawOutput, originalText) {
+  let cleaned = (rawOutput || '').trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  }
+
+  let resultJson = null;
+  try {
+    resultJson = JSON.parse(cleaned);
+  } catch (_) {
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        resultJson = JSON.parse(match[0]);
+      } catch (_) {}
+    }
+  }
+
+  const suggestions = [];
+  if (resultJson) {
+    const fix = resultJson.grammar_fix || resultJson.grammarFix || resultJson.correction || resultJson.corrected_text;
+    if (fix && typeof fix === 'string') suggestions.push(fix.trim());
+
+    const rephrases = resultJson.rephrases || resultJson.alternatives || [];
+    if (Array.isArray(rephrases)) {
+      rephrases.forEach(r => {
+        if (typeof r === 'string' && r.trim()) suggestions.push(r.trim());
+      });
+    } else if (typeof rephrases === 'string' && rephrases.trim()) {
+      suggestions.push(rephrases.trim());
+    }
+  }
+
+  // Fallback regex extraction if JSON parse failed
+  if (suggestions.length === 0) {
+    const fixMatch = cleaned.match(/"grammar_fix"\s*:\s*"((?:[^"\\]|\\.)*)"/i) || cleaned.match(/"corrected_text"\s*:\s*"((?:[^"\\]|\\.)*)"/i);
+    if (fixMatch && fixMatch[1]) {
+      suggestions.push(fixMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').trim());
+    }
+    const rephrasesBlockMatch = cleaned.match(/"rephrases"\s*:\s*\[([\s\S]*?)\]/i);
+    if (rephrasesBlockMatch && rephrasesBlockMatch[1]) {
+      const itemMatches = [...rephrasesBlockMatch[1].matchAll(/"((?:[^"\\]|\\.)*)"/g)];
+      itemMatches.forEach(m => {
+        if (m[1]) suggestions.push(m[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').trim());
+      });
+    }
+  }
+
+  // Fallback to plain text if model answered directly
+  if (suggestions.length === 0 && cleaned && cleaned !== originalText) {
+    const cleanPlain = cleaned.replace(/^\{|\}$/g, '').replace(/"grammar_fix"\s*:\s*"/i, '').replace(/"\s*,?$/i, '').trim();
+    if (cleanPlain) {
+      suggestions.push(cleanPlain);
+    }
+  }
+
+  return suggestions;
+}
+
+function parseBuiltInAIAutoCheckResult(rawOutput, cleanText) {
+  let cleaned = (rawOutput || '').trim();
+  if (cleaned.startsWith("```")) {
+    cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+  }
+
+  let resultJson = null;
+  try {
+    resultJson = JSON.parse(cleaned);
+  } catch (_) {
+    const match = cleaned.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        resultJson = JSON.parse(match[0]);
+      } catch (_) {}
+    }
+  }
+
+  if (resultJson) {
+    let hasErrors = Boolean(resultJson.has_errors);
+    const correctedText = (resultJson.corrected_text || '').trim();
+    if (correctedText === cleanText) hasErrors = false;
+    return {
+      hasErrors,
+      correctedText: hasErrors ? correctedText : cleanText,
+      explanation: resultJson.explanation || (hasErrors ? "Grammar & spelling corrections" : "")
+    };
+  }
+
+  return { hasErrors: false, correctedText: cleanText, explanation: "" };
+}
+
 // Common processor for both Context Menu, Shortcut, and Style Selection
 async function processFixGrammar(text, tab, style = 'default', customPrompt = '') {
   if (!text || !tab?.id || isRestrictedUrl(tab.url)) {
@@ -463,9 +718,10 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
   // 1. Fetch settings in parallel
   const [proInfo, syncData] = await Promise.all([
     getProStatus(),
-    chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'maxOutputTokens', 'stylePresets'])
+    chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'maxOutputTokens', 'stylePresets', 'useChromeBuiltInAI'])
   ]);
   const isPro = proInfo.isPro;
+  const useChromeBuiltInAI = syncData.useChromeBuiltInAI === true;
 
   // Gate pro styles
   if (style !== 'default' && !isPro) {
@@ -481,13 +737,6 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
     } catch (_) {}
     return;
   }
-
-  const apiKey = syncData.geminiApiKey?.trim();
-  let rawModel = syncData.geminiModel?.trim() || "gemini-3.8-flash";
-  if (rawModel === "gemini-2.0-flash") {
-    rawModel = "gemini-3.8-flash";
-  }
-  const model = rawModel.replace(/^models\//, "");
 
   // Helper to ensure content script is ready and send message
   const sendTabMessage = async (msg) => {
@@ -505,10 +754,72 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
     }
   };
 
+  // Branch 1: If user enabled Chrome Built-in AI, process grammar check with on-device Prompt API
+  if (useChromeBuiltInAI) {
+    try {
+      await sendTabMessage({
+        type: 'SHOW_LOADING',
+        originalText: text,
+        activeStyle: style,
+        isPro
+      });
+
+      const promptText = buildBuiltInAIPrompt(text, style, customPrompt, syncData.stylePresets || []);
+      const rawOutput = await executePromptWithBuiltInAI(promptText, tab);
+      const suggestions = parseBuiltInAISuggestions(rawOutput, text);
+
+      if (suggestions.length === 0) {
+        throw new Error("Could not parse suggestions from Chrome Built-in AI.");
+      }
+
+      await chrome.tabs.sendMessage(tab.id, {
+        type: 'SHOW_RESULT',
+        data: suggestions,
+        isError: false,
+        originalText: text,
+        activeStyle: style,
+        isPro,
+        engine: 'chrome-ai'
+      }).catch(() => {});
+      return;
+
+    } catch (builtInErr) {
+      console.warn("Chrome Built-in AI error:", builtInErr);
+
+      // If user also has a Gemini API key configured, gracefully fall back to Cloud API
+      const fallbackApiKey = syncData.geminiApiKey?.trim();
+      if (!fallbackApiKey) {
+        // No API key to fall back to: show user-friendly message
+        const errMsg = builtInErr.message?.includes("PROMPT_API") || builtInErr.message?.includes("chrome://flags")
+          ? builtInErr.message
+          : `Chrome Built-in AI Error: ${builtInErr.message}. Ensure Gemini Nano is enabled in chrome://flags or configure a Gemini API key in Options.`;
+
+        await chrome.tabs.sendMessage(tab.id, {
+          type: 'SHOW_RESULT',
+          data: errMsg,
+          isError: true,
+          originalText: text,
+          activeStyle: style,
+          isPro
+        }).catch(() => {});
+        return;
+      }
+      console.log("Built-in AI unavailable, falling back to Gemini Cloud API...");
+    }
+  }
+
+  // Branch 2: Original Gemini Cloud API Flow (Runs when useChromeBuiltInAI is false OR as fallback)
+  const apiKey = syncData.geminiApiKey?.trim();
+  let rawModel = syncData.geminiModel?.trim() || "gemini-3.8-flash";
+  if (rawModel === "gemini-2.0-flash") {
+    rawModel = "gemini-3.8-flash";
+  }
+  const model = rawModel.replace(/^models\//, "");
+
   try {
     // 2. Check for missing API key
     if (!apiKey) {
-      const errorMessage = "Gemini API key not found. Please set your API key in the extension's options page.";
+      const errorMessage = "Gemini API key not found. Please set your API key in the extension's options page, or enable Chrome Built-in AI.";
       await sendTabMessage({
         type: 'SHOW_RESULT',
         data: errorMessage,
@@ -676,7 +987,8 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
       isError: false,
       originalText: text,
       activeStyle: style,
-      isPro
+      isPro,
+      engine: 'gemini-cloud'
     }).catch(() => {});
 
   } catch (error) {
@@ -703,7 +1015,7 @@ const MAX_CACHE_SIZE = 100;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'AUTO_CHECK_GRAMMAR') {
-    handleAutoCheckGrammar(request.text)
+    handleAutoCheckGrammar(request.text, sender.tab)
       .then(res => sendResponse({ success: true, ...res }))
       .catch(err => sendResponse({ success: false, error: err.message }));
     return true; // Keep channel open for async response
@@ -743,7 +1055,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-async function handleAutoCheckGrammar(text) {
+async function handleAutoCheckGrammar(text, tab) {
   if (!text || typeof text !== 'string') {
     return { hasErrors: false };
   }
@@ -758,8 +1070,33 @@ async function handleAutoCheckGrammar(text) {
     return autoCheckCache.get(cleanText);
   }
 
-  // Retrieve API key and model preference
-  const data = await chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'maxOutputTokens']);
+  // Retrieve settings
+  const data = await chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'maxOutputTokens', 'useChromeBuiltInAI']);
+  const useChromeBuiltInAI = data.useChromeBuiltInAI === true;
+
+  // If user enabled Chrome Built-in AI, perform on-device check
+  if (useChromeBuiltInAI) {
+    try {
+      const promptText = buildBuiltInAIAutoCheckPrompt(cleanText);
+      const rawOutput = await executePromptWithBuiltInAI(promptText, tab);
+      const parsed = parseBuiltInAIAutoCheckResult(rawOutput, cleanText);
+
+      if (autoCheckCache.size >= MAX_CACHE_SIZE) {
+        const firstKey = autoCheckCache.keys().next().value;
+        autoCheckCache.delete(firstKey);
+      }
+      autoCheckCache.set(cleanText, parsed);
+      return parsed;
+    } catch (builtInErr) {
+      console.warn("Built-in AI auto-check error:", builtInErr);
+      if (!data.geminiApiKey?.trim()) {
+        return { hasErrors: false };
+      }
+      // If user has Gemini API key, fall through to cloud check below
+    }
+  }
+
+  // Standard Gemini Cloud API auto-check
   const apiKey = data.geminiApiKey?.trim();
   if (!apiKey) {
     return { hasErrors: false, error: 'NO_API_KEY' };

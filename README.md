@@ -13,6 +13,7 @@ A Chrome Extension (Manifest V3) that uses the Google Gemini API to fix grammar 
 - **Context Menu & Shortcut**: Highlight text on any webpage and right-click to choose **"Fix Grammar & Rephrase"**, or press `Option+Shift+G` (macOS) / `Alt+Shift+G` (Windows/Linux).
 - **Intelligent Corrections**: Uses Google's Gemini models (`gemini-2.5-flash` or `gemini-2.0-flash`) via structured JSON output for reliable parsing.
 - **Multiple Options**: Provides 1 direct grammar fix and 2 rephrasing variations.
+- **Optional Chrome Built-in AI (Free & On-Device)**: Toggle on-device grammar checking powered by Chrome's Built-in Prompt API (Gemini Nano)—100% free with no external API key required.
 - **Modern Modal UI**: Floating, responsive modal overlay with one-click copy to clipboard.
 - **Options & Model Customization**: Built-in options page with API key validation, connection test button, model picker, and rephrase tone preferences.
 - **Privacy-First**: Your Gemini API key is stored locally in your browser's `chrome.storage.sync`. Text is sent directly to Google's official API endpoint—no third-party proxy servers.

@@ -100,7 +100,7 @@ if (window.__geminiCurrentRuntime !== chrome.runtime) {
       currentModalStyle = request.activeStyle || currentModalStyle || 'default';
       if (typeof request.isPro === 'boolean') isProUser = request.isPro;
 
-      updateModalContent(request.data, request.isError, currentModalStyle, isProUser);
+      updateModalContent(request.data, request.isError, currentModalStyle, isProUser, request.engine);
     }
   });
 }
@@ -136,7 +136,7 @@ function showModal(contentHTML) {
     <div id="gemini-modal-overlay"></div>
     <div id="gemini-modal-content">
       <div id="gemini-modal-header">
-        <h2>Gemini Suggestions</h2>
+        <h2>Gemini Suggestions <span id="gemini-engine-badge" style="display: none; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; vertical-align: middle; margin-left: 6px;"></span></h2>
         <button id="gemini-modal-close-btn" aria-label="Close modal">&times;</button>
       </div>
       <div id="gemini-modal-presets"></div>
@@ -394,12 +394,29 @@ function showProUpgradeBanner() {
  * @param {string} activeStyle Active style preset ID.
  * @param {boolean} isPro Indicates whether user has Pro license.
  */
-function updateModalContent(data, isError, activeStyle = 'default', isPro = false) {
+function updateModalContent(data, isError, activeStyle = 'default', isPro = false, engine = '') {
   const modalBody = document.getElementById('gemini-modal-body');
   if (!modalBody) return;
 
   currentModalStyle = activeStyle;
   isProUser = isPro;
+
+  const engineBadge = document.getElementById('gemini-engine-badge');
+  if (engineBadge) {
+    if (!isError && engine === 'chrome-ai') {
+      engineBadge.textContent = '🤖 Built-in AI (Local)';
+      engineBadge.style.display = 'inline-block';
+      engineBadge.style.backgroundColor = '#dbeafe';
+      engineBadge.style.color = '#1d4ed8';
+    } else if (!isError && engine === 'gemini-cloud') {
+      engineBadge.textContent = '☁️ Gemini Cloud';
+      engineBadge.style.display = 'inline-block';
+      engineBadge.style.backgroundColor = '#f1f5f9';
+      engineBadge.style.color = '#475569';
+    } else {
+      engineBadge.style.display = 'none';
+    }
+  }
 
   const presetsContainer = document.getElementById('gemini-modal-presets');
   const customContainer = document.getElementById('gemini-custom-prompt-container');

@@ -12,6 +12,12 @@ const testButton = document.getElementById('test-btn');
 const detectButton = document.getElementById('detect-btn');
 const statusDiv = document.getElementById('status');
 
+// Chrome Built-in AI elements
+const useChromeAiToggle = document.getElementById('use-chrome-ai-toggle');
+const checkChromeAiBtn = document.getElementById('check-chrome-ai-btn');
+const chromeAiStatusMsg = document.getElementById('chrome-ai-status-msg');
+const apiKeyOptionalHint = document.getElementById('api-key-optional-hint');
+
 // Toggle API key visibility (password vs text)
 if (toggleKeyVisibilityBtn && apiKeyInput) {
   toggleKeyVisibilityBtn.addEventListener('click', () => {
@@ -45,9 +51,95 @@ if (autoCheckToggle) {
   });
 }
 
+// Browser detection
+const isFirefox = navigator.userAgent.includes('Firefox');
+
+// Chrome Built-in AI toggle listener
+if (useChromeAiToggle) {
+  if (isFirefox) {
+    useChromeAiToggle.disabled = true;
+    useChromeAiToggle.checked = false;
+  }
+  useChromeAiToggle.addEventListener('change', (e) => {
+    if (apiKeyOptionalHint) {
+      apiKeyOptionalHint.style.display = e.target.checked ? 'inline' : 'none';
+    }
+  });
+}
+
+// Check Chrome Built-in AI (Prompt API) status in browser
+async function checkChromeBuiltInAIStatus() {
+  if (!chromeAiStatusMsg) return;
+
+  if (isFirefox) {
+    chromeAiStatusMsg.innerHTML = `🦊 <strong>Exclusive to Google Chrome.</strong> Firefox does not have built-in Gemini Nano. Please use your free Gemini API key below.`;
+    chromeAiStatusMsg.style.color = '#d97706';
+    if (useChromeAiToggle) {
+      useChromeAiToggle.disabled = true;
+      useChromeAiToggle.checked = false;
+    }
+    return;
+  }
+
+  chromeAiStatusMsg.textContent = 'Checking Prompt API status...';
+  chromeAiStatusMsg.style.color = '#2563eb';
+
+  const scope = typeof window !== 'undefined' ? window : (typeof globalThis !== 'undefined' ? globalThis : {});
+  const ModelAPI = scope.LanguageModel || scope.ai?.languageModel;
+
+  if (!ModelAPI) {
+    chromeAiStatusMsg.innerHTML = `
+      <div style="margin-top: 4px; line-height: 1.6;">
+        <span style="color: #b45309; font-weight: 700;">⚠️ Prompt API not enabled in this Chrome browser.</span><br/>
+        <span style="font-size: 12px; color: #475569;">To activate Google's free on-device Gemini Nano:</span>
+        <ol style="margin: 6px 0 0 18px; padding: 0; font-size: 11.5px; color: #334155; line-height: 1.6;">
+          <li>Open <code>chrome://flags</code> in your address bar.</li>
+          <li>Set <strong>#prompt-api-for-gemini-nano</strong> to <strong>Enabled</strong>.</li>
+          <li>Set <strong>#optimization-guide-on-device-model</strong> to <strong>Enabled BypassPerfRequirement</strong>.</li>
+          <li>Click <strong>Relaunch</strong> Chrome.</li>
+          <li>Go to <code>chrome://components</code> and click <strong>Check for update</strong> on <em>Optimization Guide On Device Model</em> (~1.5GB).</li>
+        </ol>
+      </div>
+    `;
+    chromeAiStatusMsg.style.color = '#b45309';
+    return;
+  }
+
+  try {
+    let availableStatus = 'readily';
+    if (typeof ModelAPI.availability === 'function') {
+      availableStatus = await ModelAPI.availability();
+    } else if (typeof ModelAPI.capabilities === 'function') {
+      const caps = await ModelAPI.capabilities();
+      availableStatus = caps?.available || 'readily';
+    }
+
+    if (availableStatus === 'readily' || availableStatus === 'available') {
+      chromeAiStatusMsg.innerHTML = `🟢 <strong>Ready to use!</strong> Chrome Gemini Nano is downloaded and active on this device.`;
+      chromeAiStatusMsg.style.color = '#15803d';
+    } else if (availableStatus === 'after-download' || availableStatus === 'downloadable') {
+      chromeAiStatusMsg.innerHTML = `🟡 <strong>Supported!</strong> Gemini Nano will download automatically when first used (~1.5GB).`;
+      chromeAiStatusMsg.style.color = '#2563eb';
+    } else if (availableStatus === 'downloading') {
+      chromeAiStatusMsg.innerHTML = `⏳ <strong>Downloading...</strong> Gemini Nano is currently downloading.`;
+      chromeAiStatusMsg.style.color = '#2563eb';
+    } else {
+      chromeAiStatusMsg.innerHTML = `⚠️ <strong>Status: ${availableStatus}</strong>. Device or storage requirements may not be met.`;
+      chromeAiStatusMsg.style.color = '#b45309';
+    }
+  } catch (err) {
+    chromeAiStatusMsg.textContent = `Detection error: ${err.message}`;
+    chromeAiStatusMsg.style.color = '#dc2626';
+  }
+}
+
+if (checkChromeAiBtn) {
+  checkChromeAiBtn.addEventListener('click', checkChromeBuiltInAIStatus);
+}
+
 // Load saved settings
 function loadOptions() {
-  chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'autoCheckEnabled', 'maxOutputTokens', 'autoCheckDebounce'], (result) => {
+  chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'autoCheckEnabled', 'maxOutputTokens', 'autoCheckDebounce', 'useChromeBuiltInAI'], (result) => {
     if (result.geminiApiKey) {
       apiKeyInput.value = result.geminiApiKey;
     }
@@ -70,7 +162,20 @@ function loadOptions() {
         maxTokensSelect.value = "0"; // Default: No Limit
       }
     }
+    const useChromeAI = !isFirefox && result.useChromeBuiltInAI === true;
+    if (useChromeAiToggle) {
+      useChromeAiToggle.checked = useChromeAI;
+      if (isFirefox) {
+        useChromeAiToggle.disabled = true;
+      }
+      if (apiKeyOptionalHint) {
+        apiKeyOptionalHint.style.display = useChromeAI ? 'inline' : 'none';
+      }
+    }
   });
+
+  // Check built-in AI capabilities in background on page load
+  checkChromeBuiltInAIStatus();
 }
 
 // Ensure option is present in select element
@@ -113,9 +218,11 @@ function saveOptions() {
   const autoCheckDebounce = debounceSelect ? Number(debounceSelect.value) || 2500 : 2500;
   const rawMaxTokens = maxTokensSelect ? Number(maxTokensSelect.value) : 0;
   const maxOutputTokens = isNaN(rawMaxTokens) ? 0 : rawMaxTokens;
+  const useChromeBuiltInAI = useChromeAiToggle ? useChromeAiToggle.checked : false;
 
-  if (!apiKey) {
-    showStatus('Please enter an API key.', '#dc3545');
+  // If user has not enabled Chrome Built-in AI, an API key is required
+  if (!useChromeBuiltInAI && !apiKey) {
+    showStatus('Please enter an API key, or enable Chrome Built-in AI above.', '#dc3545');
     return;
   }
 
@@ -124,9 +231,13 @@ function saveOptions() {
     geminiModel: model,
     autoCheckEnabled: autoCheckEnabled,
     autoCheckDebounce: autoCheckDebounce,
-    maxOutputTokens: maxOutputTokens
+    maxOutputTokens: maxOutputTokens,
+    useChromeBuiltInAI: useChromeBuiltInAI
   }, () => {
-    showStatus('Settings saved successfully!', '#28a745');
+    const msg = useChromeBuiltInAI
+      ? 'Settings saved! Chrome Built-in AI is active for free grammar checking.'
+      : 'Settings saved successfully!';
+    showStatus(msg, '#28a745');
   });
 }
 
@@ -270,7 +381,11 @@ async function testConnection() {
   let model = modelSelect.value;
 
   if (!apiKey) {
-    showTestStatus('Please enter an API key first.', '#dc3545');
+    if (useChromeAiToggle && useChromeAiToggle.checked) {
+      showTestStatus('Enter a Gemini key to test Cloud API, or click "Check Browser AI Status" above.', '#dc3545', 7000);
+    } else {
+      showTestStatus('Please enter an API key first.', '#dc3545');
+    }
     return;
   }
 
