@@ -709,6 +709,9 @@
     word-break: break-word !important;
     max-height: 140px !important;
     overflow-y: auto !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    cursor: text !important;
 }
 
 #gemini-inline-popover .popover-diff del {
@@ -717,6 +720,8 @@
     text-decoration: line-through !important;
     padding: 1px 3px !important;
     border-radius: 3px !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
 }
 
 #gemini-inline-popover .popover-diff ins {
@@ -726,6 +731,9 @@
     font-weight: 600 !important;
     padding: 1px 3px !important;
     border-radius: 3px !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    cursor: text !important;
 }
 
 #gemini-inline-popover .popover-actions {
@@ -748,6 +756,33 @@
 
 #gemini-inline-popover .btn-apply-fix:hover {
     background-color: #1d4ed8 !important;
+}
+
+#gemini-inline-popover .btn-apply-fix:disabled,
+#gemini-inline-popover .btn-apply-fix.is-pro-disabled {
+    background-color: #e2e8f0 !important;
+    color: #94a3b8 !important;
+    border: 1px solid #cbd5e1 !important;
+    cursor: not-allowed !important;
+    opacity: 0.8 !important;
+    box-shadow: none !important;
+}
+
+#gemini-inline-popover .btn-apply-fix:disabled:hover,
+#gemini-inline-popover .btn-apply-fix.is-pro-disabled:hover {
+    background-color: #e2e8f0 !important;
+}
+
+#gemini-inline-popover .popover-pro-notice {
+    font-size: 11px !important;
+    color: #64748b !important;
+    margin-top: 8px !important;
+    text-align: center !important;
+    line-height: 1.4 !important;
+    background: #f8fafc !important;
+    padding: 6px 10px !important;
+    border-radius: 6px !important;
+    border: 1px dashed #cbd5e1 !important;
 }
 
 #gemini-inline-popover .btn-dismiss-fix {

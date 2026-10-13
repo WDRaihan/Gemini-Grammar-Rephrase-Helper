@@ -1095,7 +1095,10 @@ const MAX_CACHE_SIZE = 100;
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'AUTO_CHECK_GRAMMAR') {
     handleAutoCheckGrammar(request.text, sender.tab)
-      .then(res => sendResponse({ success: true, ...res }))
+      .then(async res => {
+        const proInfo = await getProStatus();
+        sendResponse({ success: true, isPro: proInfo.isPro, ...res });
+      })
       .catch(err => sendResponse({ success: false, error: err.message }));
     return true; // Keep channel open for async response
   }

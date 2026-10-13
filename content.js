@@ -852,6 +852,15 @@ function toggleInlinePopover() {
 
   const popover = document.createElement('div');
   popover.id = 'gemini-inline-popover';
+
+  const applyBtnHTML = isProUser
+    ? `<button type="button" class="btn-apply-fix" title="Apply correction instantly">Apply Fix</button>`
+    : `<button type="button" class="btn-apply-fix is-pro-disabled" disabled title="1-Click Apply Fix is a Pro feature — Upgrade to unlock">🔒 Apply Fix (Pro)</button>`;
+
+  const proNoticeHTML = !isProUser
+    ? `<div class="popover-pro-notice"><span>🔒</span> 1-Click Apply is for Pro users. Select & copy the suggestion above to paste.</div>`
+    : '';
+
   popover.innerHTML = `
     <div class="popover-header">
       <h4 class="popover-title"><span>✦</span> Gemini Grammar Fix</h4>
@@ -866,9 +875,10 @@ function toggleInlinePopover() {
         <ins>${escapeHTML(correction.correctedText)}</ins>
       </div>
       <div class="popover-actions">
-        <button class="btn-apply-fix">Apply Fix</button>
-        <button class="btn-dismiss-fix">Dismiss</button>
+        ${applyBtnHTML}
+        <button type="button" class="btn-dismiss-fix">Dismiss</button>
       </div>
+      ${proNoticeHTML}
     </div>
   `;
 
@@ -883,31 +893,35 @@ function toggleInlinePopover() {
   popover.querySelector('.popover-close').addEventListener('click', removeInlinePopover);
   popover.querySelector('.btn-dismiss-fix').addEventListener('click', removeInlinePopover);
 
-  popover.querySelector('.btn-apply-fix').addEventListener('click', () => {
-    if (targetElement && correction) {
-      setFieldText(targetElement, correction.correctedText);
-      const st = getElementState(targetElement);
-      st.status = 'clean';
-      st.lastCheckedText = correction.correctedText.trim();
-      st.correction = null;
-      if (activeInputElement === targetElement) {
-        setBadgeState('clean', 'Fixed!');
-      }
-      removeInlinePopover();
-
-      // Record applied quick fix to History Log for Pro users
-      chrome.runtime.sendMessage({
-        type: 'RECORD_HISTORY_ITEM',
-        item: {
-          originalText: correction.originalText,
-          suggestions: [correction.correctedText],
-          style: 'inline-fix',
-          styleLabel: 'Quick Fix',
-          engine: correction.engine || 'gemini-cloud'
+  const applyBtn = popover.querySelector('.btn-apply-fix');
+  if (applyBtn && !applyBtn.disabled) {
+    applyBtn.addEventListener('click', () => {
+      if (!isProUser) return;
+      if (targetElement && correction) {
+        setFieldText(targetElement, correction.correctedText);
+        const st = getElementState(targetElement);
+        st.status = 'clean';
+        st.lastCheckedText = correction.correctedText.trim();
+        st.correction = null;
+        if (activeInputElement === targetElement) {
+          setBadgeState('clean', 'Fixed!');
         }
-      });
-    }
-  });
+        removeInlinePopover();
+
+        // Record applied quick fix to History Log for Pro users
+        chrome.runtime.sendMessage({
+          type: 'RECORD_HISTORY_ITEM',
+          item: {
+            originalText: correction.originalText,
+            suggestions: [correction.correctedText],
+            style: 'inline-fix',
+            styleLabel: 'Quick Fix',
+            engine: correction.engine || 'gemini-cloud'
+          }
+        });
+      }
+    });
+  }
 }
 
 function removeInlinePopover() {
@@ -987,6 +1001,10 @@ function scheduleInlineCheck(el) {
       // Guard against race conditions: verify this is still the freshest request and text didn't change
       if (state.requestId !== currentReqId) return;
       if (getFieldText(el).trim() !== currentText) return;
+
+      if (typeof response?.isPro === 'boolean') {
+        isProUser = response.isPro;
+      }
 
       if (!response?.success) {
         state.status = 'idle';
