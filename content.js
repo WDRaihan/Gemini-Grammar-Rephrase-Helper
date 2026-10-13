@@ -664,7 +664,16 @@ function ensureInlineBadge() {
   if (activeInlineBadge) return activeInlineBadge;
   const badge = document.createElement('div');
   badge.id = 'gemini-inline-badge';
-  badge.innerHTML = `<span class="gemini-badge-icon">✦</span><span class="gemini-badge-text">Gemini</span>`;
+
+  const iconUrl = (chrome.runtime && chrome.runtime.getURL) 
+    ? chrome.runtime.getURL('images/icon48.png') 
+    : '';
+
+  badge.innerHTML = `
+    <img src="${iconUrl}" class="gemini-badge-img" alt="✦" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'" />
+    <span class="gemini-badge-fallback-icon" style="display:none;font-size:12px;color:#2563eb;line-height:1;">✦</span>
+    <span class="gemini-badge-dot"></span>
+  `;
   document.body.appendChild(badge);
   activeInlineBadge = badge;
 
@@ -703,15 +712,18 @@ function updateBadgePosition() {
   }
 
   activeInlineBadge.style.display = 'inline-flex';
+  const badgeSize = 24;
   const isSingleLine = rect.height < 45;
   let top, left;
 
   if (isSingleLine) {
-    top = window.scrollY + rect.top + (rect.height - 24) / 2;
-    left = window.scrollX + rect.right - 42;
+    // Vertically center inside single-line inputs
+    top = window.scrollY + rect.top + (rect.height - badgeSize) / 2;
+    left = window.scrollX + rect.right - badgeSize - 8;
   } else {
-    top = window.scrollY + rect.bottom - 32;
-    left = window.scrollX + rect.right - 46;
+    // Bottom-right corner for textareas & multi-line inputs
+    top = window.scrollY + rect.bottom - badgeSize - 8;
+    left = window.scrollX + rect.right - badgeSize - 10;
   }
 
   activeInlineBadge.style.top = `${Math.max(0, top)}px`;
@@ -722,7 +734,7 @@ function updateBadgePosition() {
   }
 }
 
-function setBadgeState(state, text = '') {
+function setBadgeState(state, tooltipText = '') {
   const badge = ensureInlineBadge();
   badge.style.opacity = '1';
   badge.className = '';
@@ -730,29 +742,25 @@ function setBadgeState(state, text = '') {
     badge.classList.add(state);
   }
 
-  const iconEl = badge.querySelector('.gemini-badge-icon');
-  const textEl = badge.querySelector('.gemini-badge-text');
-
   if (state === 'checking') {
-    if (iconEl) iconEl.textContent = '✦';
-    if (textEl) textEl.textContent = 'Checking...';
+    badge.title = tooltipText || 'Checking grammar with Gemini...';
   } else if (state === 'has-error') {
-    if (iconEl) iconEl.innerHTML = `<span class="gemini-badge-dot"></span> ✦`;
-    if (textEl) textEl.textContent = text || 'Fix Available';
+    badge.title = tooltipText || 'Grammar issue found — Click to fix';
   } else if (state === 'clean') {
-    if (iconEl) iconEl.textContent = '✓';
-    if (textEl) textEl.textContent = text || 'Correct';
+    badge.title = tooltipText || 'Grammar looking good!';
     setTimeout(() => {
       if (badge && badge.classList.contains('clean')) {
-        badge.style.opacity = '0';
-        setTimeout(() => {
-          if (badge && badge.style.opacity === '0') removeInlineBadge();
-        }, 300);
+        if (activeInputElement) {
+          const st = getElementState(activeInputElement);
+          if (st.status === 'clean') {
+            setBadgeState('idle');
+          }
+        }
       }
     }, 2500);
   } else {
-    if (iconEl) iconEl.textContent = '✦';
-    if (textEl) textEl.textContent = text || 'Gemini';
+    // idle / default
+    badge.title = tooltipText || 'Gemini Grammar Helper';
   }
   updateBadgePosition();
 }

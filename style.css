@@ -473,7 +473,7 @@
 }
 
 /* ==========================================================================
-   Grammarly-Style Real-Time Inline Badge & Popover
+   Grammarly-Style Compact Circular Inline Badge & Popover
    ========================================================================== */
 
 #gemini-inline-badge {
@@ -482,63 +482,99 @@
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-    gap: 6px !important;
+    width: 24px !important;
+    height: 24px !important;
     background: #ffffff !important;
-    border: 1px solid #cbd5e1 !important;
-    border-radius: 20px !important;
-    padding: 4px 9px !important;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
-    font-size: 12px !important;
-    font-weight: 600 !important;
-    color: #475569 !important;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12) !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1) !important;
     cursor: pointer !important;
     user-select: none !important;
     transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
-    line-height: 1 !important;
     box-sizing: border-box !important;
     pointer-events: auto !important;
+    overflow: visible !important;
 }
 
 #gemini-inline-badge:hover {
-    transform: scale(1.04) !important;
-    box-shadow: 0 4px 14px rgba(74, 144, 226, 0.25) !important;
-    border-color: #4a90e2 !important;
+    transform: scale(1.1) !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18) !important;
+    border-color: #94a3b8 !important;
 }
 
+#gemini-inline-badge .gemini-badge-img {
+    width: 14px !important;
+    height: 14px !important;
+    object-fit: contain !important;
+    pointer-events: none !important;
+    display: block !important;
+}
+
+#gemini-inline-badge .gemini-badge-dot {
+    display: none !important;
+}
+
+/* 1. Checking State: Blue pulsing ring */
 #gemini-inline-badge.checking {
-    color: #4a90e2 !important;
-    border-color: #93c5fd !important;
-}
-
-#gemini-inline-badge.checking .gemini-badge-icon {
-    animation: geminiPulse 1.2s ease-in-out infinite !important;
-}
-
-#gemini-inline-badge.has-error {
-    background: #eff6ff !important;
     border-color: #3b82f6 !important;
-    color: #1d4ed8 !important;
-    box-shadow: 0 3px 12px rgba(59, 130, 246, 0.25) !important;
+    background: #eff6ff !important;
+    animation: geminiPulseRing 1.2s ease-in-out infinite !important;
+}
+
+@keyframes geminiPulseRing {
+    0%, 100% {
+        box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.35);
+    }
+}
+
+/* 2. Error State: Red status like Grammarly */
+#gemini-inline-badge.has-error {
+    border-color: #ef4444 !important;
+    background: #fef2f2 !important;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3) !important;
+}
+
+#gemini-inline-badge.has-error:hover {
+    border-color: #dc2626 !important;
+    box-shadow: 0 3px 12px rgba(239, 68, 68, 0.45) !important;
 }
 
 #gemini-inline-badge.has-error .gemini-badge-dot {
-    width: 6px !important;
-    height: 6px !important;
+    display: block !important;
+    position: absolute !important;
+    top: -3px !important;
+    right: -3px !important;
+    width: 8px !important;
+    height: 8px !important;
     border-radius: 50% !important;
     background-color: #ef4444 !important;
-    display: inline-block !important;
+    border: 1.5px solid #ffffff !important;
+    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.5) !important;
 }
 
+/* 3. Clean / Good State: Green status */
 #gemini-inline-badge.clean {
-    color: #059669 !important;
-    border-color: #a7f3d0 !important;
-    background-color: #ecfdf5 !important;
+    border-color: #10b981 !important;
+    background: #ecfdf5 !important;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25) !important;
 }
 
-@keyframes geminiPulse {
-    0%, 100% { opacity: 0.5; transform: scale(0.9); }
-    50% { opacity: 1; transform: scale(1.15); }
+#gemini-inline-badge.clean .gemini-badge-dot {
+    display: block !important;
+    position: absolute !important;
+    top: -3px !important;
+    right: -3px !important;
+    width: 8px !important;
+    height: 8px !important;
+    border-radius: 50% !important;
+    background-color: #10b981 !important;
+    border: 1.5px solid #ffffff !important;
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.5) !important;
 }
 
 /* Inline Popover Card */
