@@ -516,19 +516,48 @@
     display: none !important;
 }
 
-/* 1. Checking State: Blue pulsing ring */
+/* 1. Checking State: Smooth spinning animated ring */
 #gemini-inline-badge.checking {
-    border-color: #3b82f6 !important;
+    border-color: #93c5fd !important;
     background: #eff6ff !important;
-    animation: geminiPulseRing 1.2s ease-in-out infinite !important;
+    box-shadow: 0 1px 4px rgba(59, 130, 246, 0.15) !important;
 }
 
-@keyframes geminiPulseRing {
+#gemini-inline-badge.checking::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: -3px !important;
+    border-radius: 50% !important;
+    border: 2px solid rgba(59, 130, 246, 0.2) !important;
+    border-top-color: #2563eb !important;
+    border-right-color: #3b82f6 !important;
+    animation: geminiSmoothSpin 0.75s linear infinite !important;
+    pointer-events: none !important;
+    box-sizing: border-box !important;
+    will-change: transform !important;
+}
+
+#gemini-inline-badge.checking .gemini-badge-img {
+    animation: geminiIconSubtlePulse 1.2s ease-in-out infinite !important;
+}
+
+@keyframes geminiSmoothSpin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes geminiIconSubtlePulse {
     0%, 100% {
-        box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2);
+        transform: scale(0.92);
+        opacity: 0.85;
     }
     50% {
-        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.35);
+        transform: scale(1.05);
+        opacity: 1;
     }
 }
 
