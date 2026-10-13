@@ -14,6 +14,9 @@ A Chrome Extension (Manifest V3) that uses the Google Gemini API to fix grammar 
 - **Intelligent Corrections**: Uses Google's Gemini models (`gemini-2.5-flash` or `gemini-2.0-flash`) via structured JSON output for reliable parsing.
 - **Multiple Options**: Provides 1 direct grammar fix and 2 rephrasing variations.
 - **Optional Chrome Built-in AI (Free & On-Device)**: Toggle on-device grammar checking powered by Chrome's Built-in Prompt API (Gemini Nano)—100% free with no external API key required.
+- **Real-Time Input Field Grammar Checker**: Grammarly-style unobtrusive badge on editable inputs with instant checking, error highlight, and 1-click quick fix popover.
+- **Rephrase History Log (Pro)**: Automatically saves your last 50 rephrasings with timestamps, full-text keyword search, style filters, 1-click clipboard copying, and JSON export.
+- **Custom Style Presets (Pro)**: Unlock instant tone transformations (Make Formal, Simplify, Bullet Points, Casual Slack, and custom prompt templates).
 - **Modern Modal UI**: Floating, responsive modal overlay with one-click copy to clipboard.
 - **Options & Model Customization**: Built-in options page with API key validation, connection test button, model picker, and rephrase tone preferences.
 - **Privacy-First**: Your Gemini API key is stored locally in your browser's `chrome.storage.sync`. Text is sent directly to Google's official API endpoint—no third-party proxy servers.

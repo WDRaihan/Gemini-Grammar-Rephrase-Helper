@@ -137,7 +137,10 @@ function showModal(contentHTML) {
     <div id="gemini-modal-content">
       <div id="gemini-modal-header">
         <h2>Gemini Suggestions <span id="gemini-engine-badge" style="display: none; font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 6px; vertical-align: middle; margin-left: 6px;"></span></h2>
-        <button id="gemini-modal-close-btn" aria-label="Close modal">&times;</button>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <button id="gemini-modal-history-btn" title="View Rephrase History Log (Pro)" aria-label="Open History Log">📜 History</button>
+          <button id="gemini-modal-close-btn" aria-label="Close modal">&times;</button>
+        </div>
       </div>
       <div id="gemini-modal-presets"></div>
       <div id="gemini-custom-prompt-container">
@@ -154,6 +157,13 @@ function showModal(contentHTML) {
 
   document.getElementById('gemini-modal-close-btn').addEventListener('click', closeModal);
   document.getElementById('gemini-modal-overlay').addEventListener('click', closeModal);
+
+  const historyBtn = document.getElementById('gemini-modal-history-btn');
+  if (historyBtn) {
+    historyBtn.addEventListener('click', () => {
+      chrome.runtime.sendMessage({ type: 'OPEN_HISTORY_PAGE' });
+    });
+  }
   
   const customBtn = document.getElementById('gemini-custom-prompt-btn');
   const customInput = document.getElementById('gemini-custom-prompt-input');
@@ -884,6 +894,18 @@ function toggleInlinePopover() {
         setBadgeState('clean', 'Fixed!');
       }
       removeInlinePopover();
+
+      // Record applied quick fix to History Log for Pro users
+      chrome.runtime.sendMessage({
+        type: 'RECORD_HISTORY_ITEM',
+        item: {
+          originalText: correction.originalText,
+          suggestions: [correction.correctedText],
+          style: 'inline-fix',
+          styleLabel: 'Quick Fix',
+          engine: correction.engine || 'gemini-cloud'
+        }
+      });
     }
   });
 }

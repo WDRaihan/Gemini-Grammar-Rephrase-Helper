@@ -737,6 +737,294 @@
             border-color: var(--primary);
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
         }
+
+        /* History Log Styles */
+        .history-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            margin-bottom: 18px;
+            flex-wrap: wrap;
+        }
+
+        .history-search-wrap {
+            position: relative;
+            flex: 1;
+            min-width: 240px;
+            display: flex;
+            align-items: center;
+        }
+
+        .history-search-icon {
+            position: absolute;
+            left: 12px;
+            font-size: 14px;
+            color: #94a3b8;
+            pointer-events: none;
+        }
+
+        #history-search-input {
+            width: 100%;
+            padding: 9px 34px 9px 36px;
+            font-size: 13px;
+            border: 1px solid #cbd5e1;
+            border-radius: var(--radius-md);
+            background-color: #ffffff;
+            color: var(--text-main);
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        #history-search-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        #history-clear-search-btn {
+            position: absolute;
+            right: 10px;
+            background: none;
+            border: none;
+            color: #94a3b8;
+            font-size: 14px;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        #history-clear-search-btn:hover {
+            color: #475569;
+            background-color: #f1f5f9;
+        }
+
+        .history-filter-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .history-filter-select {
+            padding: 8px 12px;
+            font-size: 12.5px;
+            border: 1px solid #cbd5e1;
+            border-radius: var(--radius-md);
+            background-color: #ffffff;
+            color: var(--text-main);
+            cursor: pointer;
+        }
+
+        .history-filter-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .history-items-container {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .history-item-card {
+            background-color: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: var(--radius-md);
+            padding: 14px 16px;
+            transition: border-color 0.15s, box-shadow 0.15s;
+            position: relative;
+        }
+
+        .history-item-card:hover {
+            border-color: #cbd5e1;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        .history-item-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #f1f5f9;
+            flex-wrap: wrap;
+        }
+
+        .history-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .history-time-badge {
+            font-size: 11.5px;
+            color: #64748b;
+            font-weight: 500;
+        }
+
+        .history-relative-time {
+            font-size: 11px;
+            background-color: #f1f5f9;
+            color: #475569;
+            padding: 2px 7px;
+            border-radius: 4px;
+            font-weight: 600;
+        }
+
+        .history-style-pill {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 6px;
+            background-color: #ede9fe;
+            color: #6d28d9;
+        }
+
+        .history-engine-pill {
+            font-size: 10.5px;
+            font-weight: 500;
+            padding: 2px 7px;
+            border-radius: 4px;
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+        }
+
+        .history-delete-item-btn {
+            background: none;
+            border: 1px solid transparent;
+            color: #94a3b8;
+            font-size: 13px;
+            cursor: pointer;
+            padding: 3px 6px;
+            border-radius: 4px;
+            transition: all 0.15s;
+        }
+
+        .history-delete-item-btn:hover {
+            color: #dc2626;
+            background-color: #fee2e2;
+            border-color: #fecaca;
+        }
+
+        .history-item-body {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .history-box-label {
+            font-size: 10.5px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: #64748b;
+            margin-bottom: 4px;
+        }
+
+        .history-original-text {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #475569;
+            background-color: #f8fafc;
+            border-left: 3px solid #cbd5e1;
+            padding: 8px 12px;
+            border-radius: 0 6px 6px 0;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .history-suggestion-row {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            gap: 12px;
+            background-color: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-left: 3px solid #16a34a;
+            padding: 8px 12px;
+            border-radius: 0 6px 6px 0;
+            margin-bottom: 6px;
+            transition: background-color 0.15s;
+        }
+
+        .history-suggestion-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .history-suggestion-text {
+            flex: 1;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #166534;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .btn-copy-history {
+            flex-shrink: 0;
+            background-color: #ffffff;
+            border: 1px solid #86efac;
+            color: #166534;
+            border-radius: 6px;
+            padding: 4px 10px;
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-copy-history:hover {
+            background-color: #dcfce7;
+            border-color: #4ade80;
+        }
+
+        .btn-copy-history.copied {
+            background-color: #16a34a;
+            border-color: #16a34a;
+            color: #ffffff;
+        }
+
+        .history-empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            background-color: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: var(--radius-md);
+        }
+
+        .history-empty-icon {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .history-empty-title {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin: 0 0 6px 0;
+        }
+
+        .history-empty-desc {
+            font-size: 13px;
+            color: var(--text-muted);
+            max-width: 440px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        .history-highlight {
+            background-color: #fef08a;
+            color: #713f12;
+            padding: 0 2px;
+            border-radius: 2px;
+            font-weight: 600;
+        }
     </style>
 </head>
 <body>
@@ -776,6 +1064,9 @@
             </button>
             <button type="button" class="tab-btn" data-tab="presets" role="tab">
                 <span class="tab-icon">🎨</span> Style Presets
+            </button>
+            <button type="button" class="tab-btn" data-tab="history" role="tab">
+                <span class="tab-icon">📜</span> History Log
             </button>
             <button type="button" class="tab-btn" data-tab="pro" role="tab">
                 <span class="tab-icon">⭐</span> Pro Plan
@@ -1032,7 +1323,85 @@
             </div>
         </div>
 
-        <!-- TAB 5: Pro Membership & Presets -->
+        <!-- TAB 5: Rephrase History Log (Pro Feature) -->
+        <div id="tab-history" class="tab-panel" role="tabpanel">
+            <!-- Pro Gate Alert (Displayed when user is Free) -->
+            <div id="history-pro-lock" class="card card-pro" style="display: none;">
+                <div class="card-header" style="border-bottom-color: #dbeafe;">
+                    <h2 class="card-title" style="color: #1e3a8a;">
+                        <span class="icon">🔒</span> Pro Feature: Rephrase History Log (Last 50 Rephrasings)
+                    </h2>
+                    <span class="pro-badge">Pro Required</span>
+                </div>
+                <p style="font-size: 13px; color: #334155; line-height: 1.5; margin: 0 0 14px 0;">
+                    Never lose a great rewrite again! History Log automatically saves your last 50 rephrasings and grammar fixes with exact timestamps, instant full-text search, and 1-click clipboard copying. Upgrade to Pro or enter your license key to unlock your personal writing history log.
+                </p>
+                <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+                    <a href="https://checkout.freemius.com/?plugin_id=41271&pricing_id=98283" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 9px 18px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; border-radius: 8px; font-size: 13px; font-weight: 600; text-decoration: none; box-shadow: 0 2px 4px rgba(37,99,235,0.2);">
+                        Upgrade to Pro ↗
+                    </a>
+                    <button type="button" id="switch-to-pro-from-history-btn" class="btn-detect" style="padding: 9px 15px;">
+                        Enter License Key
+                    </button>
+                    <div style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; color: #475569;">
+                        <span>Already purchased?</span>
+                        <a href="https://customers.freemius.com/" target="_blank" rel="noopener noreferrer" style="color: var(--primary); font-weight: 600; text-decoration: underline; text-underline-offset: 2px;" title="Retrieve your license key or manage active device installs">
+                            Find License (Client Portal) ↗
+                        </a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- History Manager (Displayed when user is Pro) -->
+            <div id="history-manager" class="card">
+                <div class="card-header">
+                    <div>
+                        <h2 class="card-title"><span class="icon">📜</span> Rephrase History Log</h2>
+                        <div class="help-text" style="margin-top: 3px;">
+                            Review, search, and copy your last 50 rephrasings and grammar improvements with timestamps.
+                        </div>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span id="history-count-badge" class="smart-pill" style="color: #2563eb; background-color: #eff6ff;">0 / 50 Saved</span>
+                        <span class="smart-pill">⭐ Pro Active</span>
+                    </div>
+                </div>
+
+                <!-- History Search & Filter Toolbar -->
+                <div class="history-toolbar">
+                    <div class="history-search-wrap">
+                        <span class="history-search-icon">🔍</span>
+                        <input type="text" id="history-search-input" placeholder="Search by text, rephrasing, or style..." autocomplete="off">
+                        <button type="button" id="history-clear-search-btn" title="Clear search" style="display: none;">✕</button>
+                    </div>
+                    <div class="history-filter-actions">
+                        <select id="history-style-filter" class="history-filter-select">
+                            <option value="all">All Styles</option>
+                            <option value="default">Grammar Fix</option>
+                            <option value="formal">Make Formal</option>
+                            <option value="simplify">Simplify</option>
+                            <option value="bullets">Bullet Points</option>
+                            <option value="slack">Slack / Chat</option>
+                            <option value="custom">Custom Presets</option>
+                            <option value="inline-fix">Quick Fix</option>
+                        </select>
+                        <button type="button" id="history-export-btn" class="btn-detect" style="padding: 8px 12px; font-size: 12px; font-weight: 600;" title="Export history to a JSON file">
+                            ⬇️ Export
+                        </button>
+                        <button type="button" id="history-clear-all-btn" class="btn-detect" style="padding: 8px 12px; font-size: 12px; font-weight: 600; color: #dc2626; border-color: #fecaca; background-color: #fff5f5;" title="Clear all saved history">
+                            🗑️ Clear All
+                        </button>
+                    </div>
+                </div>
+
+                <!-- History Items List Container -->
+                <div id="history-items-container" class="history-items-container">
+                    <!-- Populated dynamically via JS -->
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 6: Pro Membership & Presets -->
         <div id="tab-pro" class="tab-panel" role="tabpanel">
             <div class="card card-pro">
                 <div class="card-header" style="border-bottom-color: #dbeafe;">
@@ -1041,7 +1410,7 @@
                 </div>
 
                 <div class="help-text" style="font-size: 13px; color: #334155; margin-bottom: 14px; line-height: 1.5;">
-                    Pro unlocks instant writing transformations: <strong>Make Formal</strong>, <strong>Simplify for 5th Grader</strong>, <strong>Convert to Bullet Points</strong>, <strong>Casual Slack Message</strong>, and unlimited <strong>Custom Prompts</strong>.
+                    Pro unlocks instant writing transformations: <strong>Make Formal</strong>, <strong>Simplify for 5th Grader</strong>, <strong>Convert to Bullet Points</strong>, <strong>Casual Slack Message</strong>, unlimited <strong>Custom Prompts</strong>, and <strong>Rephrase History Log</strong> (saves your last 50 rephrasings with full-text search).
                 </div>
 
                 <!-- Upgrade Link & Client Portal -->

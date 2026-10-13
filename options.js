@@ -711,6 +711,20 @@ function loadProSettings() {
       }
     }
 
+    // Toggle History Log tab Pro lock vs Manager
+    const historyProLock = document.getElementById('history-pro-lock');
+    const historyManager = document.getElementById('history-manager');
+    if (historyProLock && historyManager) {
+      if (isPro) {
+        historyProLock.style.display = 'none';
+        historyManager.style.display = 'block';
+        loadRephraseHistory();
+      } else {
+        historyProLock.style.display = 'block';
+        historyManager.style.display = 'none';
+      }
+    }
+
     if (isPro) {
       if (proBadge) {
         proBadge.textContent = `${result.fs_plan_name || 'Pro'} Active ✓`;
@@ -798,6 +812,276 @@ if (deactivateLicenseBtn) {
   });
 }
 
+// --- Pro Rephrase History Log Management ---
+let cachedHistory = [];
+
+const historySearchInput = document.getElementById('history-search-input');
+const historyClearSearchBtn = document.getElementById('history-clear-search-btn');
+const historyStyleFilter = document.getElementById('history-style-filter');
+const historyItemsContainer = document.getElementById('history-items-container');
+const historyCountBadge = document.getElementById('history-count-badge');
+const historyExportBtn = document.getElementById('history-export-btn');
+const historyClearAllBtn = document.getElementById('history-clear-all-btn');
+
+function formatTimestamp(ms) {
+  if (!ms) return '';
+  const date = new Date(ms);
+  const dateStr = date.toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+  const timeStr = date.toLocaleTimeString(undefined, {
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+  return `${dateStr}, ${timeStr}`;
+}
+
+function formatRelativeTime(ms) {
+  if (!ms) return '';
+  const diff = Date.now() - ms;
+  const sec = Math.floor(diff / 1000);
+  if (sec < 60) return 'Just now';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  const days = Math.floor(hr / 24);
+  if (days === 1) return 'Yesterday';
+  if (days < 30) return `${days}d ago`;
+  return '';
+}
+
+function escapeHtml(str) {
+  if (!str) return '';
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function highlightMatch(text, query) {
+  if (!text) return '';
+  const escaped = escapeHtml(text);
+  if (!query) return escaped;
+
+  const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const reg = new RegExp(`(${safeQuery})`, 'gi');
+  return escaped.replace(reg, '<mark class="history-highlight">$1</mark>');
+}
+
+function loadRephraseHistory() {
+  chrome.storage.local.get(['rephraseHistory'], (result) => {
+    cachedHistory = Array.isArray(result.rephraseHistory) ? result.rephraseHistory : [];
+    if (historyCountBadge) {
+      historyCountBadge.textContent = `${cachedHistory.length} / 50 Saved`;
+    }
+    filterAndRenderHistory();
+  });
+}
+
+function filterAndRenderHistory() {
+  if (!historyItemsContainer) return;
+
+  const query = (historySearchInput ? historySearchInput.value : '').trim().toLowerCase();
+  const styleFilter = historyStyleFilter ? historyStyleFilter.value : 'all';
+
+  if (historyClearSearchBtn) {
+    historyClearSearchBtn.style.display = query.length > 0 ? 'inline-block' : 'none';
+  }
+
+  let filtered = [...cachedHistory];
+
+  if (styleFilter !== 'all') {
+    if (styleFilter === 'custom') {
+      filtered = filtered.filter(item => item.style === 'custom' || (!['default', 'formal', 'simplify', 'bullets', 'slack', 'inline-fix'].includes(item.style)));
+    } else {
+      filtered = filtered.filter(item => item.style === styleFilter);
+    }
+  }
+
+  if (query) {
+    filtered = filtered.filter(item => {
+      const orig = (item.originalText || '').toLowerCase();
+      const suggestions = (item.suggestions || []).map(s => (s || '').toLowerCase()).join(' ');
+      const styleLabel = (item.styleLabel || '').toLowerCase();
+      const style = (item.style || '').toLowerCase();
+      const engine = (item.engine || '').toLowerCase();
+
+      return orig.includes(query) || suggestions.includes(query) || styleLabel.includes(query) || style.includes(query) || engine.includes(query);
+    });
+  }
+
+  renderHistoryItems(filtered, query, cachedHistory.length);
+}
+
+function renderHistoryItems(items, query, totalSaved) {
+  if (!historyItemsContainer) return;
+  historyItemsContainer.innerHTML = '';
+
+  if (totalSaved === 0) {
+    historyItemsContainer.innerHTML = `
+      <div class="history-empty-state">
+        <div class="history-empty-icon">📜</div>
+        <h3 class="history-empty-title">No Rephrasings Saved Yet</h3>
+        <p class="history-empty-desc">
+          Whenever you select text on any webpage and rephrase or fix grammar with Gemini, your history will be logged here automatically (up to the last 50 rephrasings).
+        </p>
+      </div>
+    `;
+    return;
+  }
+
+  if (items.length === 0) {
+    historyItemsContainer.innerHTML = `
+      <div class="history-empty-state">
+        <div class="history-empty-icon">🔍</div>
+        <h3 class="history-empty-title">No Matching Rephrasings Found</h3>
+        <p class="history-empty-desc">
+          No saved items match your current search query or filter. Try a different search term or reset the style filter.
+        </p>
+        <button type="button" id="reset-history-search-btn" class="btn-detect" style="margin-top: 14px; padding: 7px 14px; font-size: 12.5px;">
+          Clear Filters
+        </button>
+      </div>
+    `;
+    const resetBtn = document.getElementById('reset-history-search-btn');
+    if (resetBtn) {
+      resetBtn.addEventListener('click', () => {
+        if (historySearchInput) historySearchInput.value = '';
+        if (historyStyleFilter) historyStyleFilter.value = 'all';
+        filterAndRenderHistory();
+      });
+    }
+    return;
+  }
+
+  items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'history-item-card';
+    card.dataset.id = item.id;
+
+    const timeStr = formatTimestamp(item.timestamp);
+    const relativeTime = formatRelativeTime(item.timestamp);
+    const engineBadge = item.engine === 'chrome-ai' ? '⚡ Chrome AI' : '☁️ Gemini Cloud';
+
+    const suggestionsHTML = (item.suggestions || []).map((sugg) => `
+      <div class="history-suggestion-row">
+        <div class="history-suggestion-text">${highlightMatch(sugg, query)}</div>
+        <button type="button" class="btn-copy-history" data-text="${escapeHtml(sugg)}" title="Copy suggestion to clipboard">
+          📋 Copy
+        </button>
+      </div>
+    `).join('');
+
+    card.innerHTML = `
+      <div class="history-item-header">
+        <div class="history-item-meta">
+          <span class="history-time-badge" title="${escapeHtml(timeStr)}">${escapeHtml(timeStr)}</span>
+          ${relativeTime ? `<span class="history-relative-time">${escapeHtml(relativeTime)}</span>` : ''}
+          <span class="history-style-pill">${escapeHtml(item.styleLabel || 'Rephrase')}</span>
+          <span class="history-engine-pill">${escapeHtml(engineBadge)}</span>
+        </div>
+        <button type="button" class="history-delete-item-btn" data-id="${escapeHtml(item.id)}" title="Delete this entry" aria-label="Delete entry">
+          🗑️
+        </button>
+      </div>
+      <div class="history-item-body">
+        <div>
+          <div class="history-box-label">Original Text</div>
+          <div class="history-original-text">${highlightMatch(item.originalText, query)}</div>
+        </div>
+        <div>
+          <div class="history-box-label">Rephrased Suggestions (${(item.suggestions || []).length})</div>
+          ${suggestionsHTML}
+        </div>
+      </div>
+    `;
+
+    historyItemsContainer.appendChild(card);
+  });
+
+  // Attach 1-click Copy button handlers
+  const copyButtons = historyItemsContainer.querySelectorAll('.btn-copy-history');
+  copyButtons.forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const textToCopy = btn.getAttribute('data-text');
+      if (!textToCopy) return;
+
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+        const originalHTML = btn.innerHTML;
+        btn.classList.add('copied');
+        btn.innerHTML = '✓ Copied!';
+        setTimeout(() => {
+          btn.classList.remove('copied');
+          btn.innerHTML = originalHTML;
+        }, 1500);
+      } catch (err) {
+        console.error('Failed to copy to clipboard:', err);
+      }
+    });
+  });
+
+  // Attach Delete Item handlers
+  const deleteButtons = historyItemsContainer.querySelectorAll('.history-delete-item-btn');
+  deleteButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id');
+      if (id) {
+        deleteHistoryItem(id);
+      }
+    });
+  });
+}
+
+function deleteHistoryItem(id) {
+  chrome.storage.local.get(['rephraseHistory'], (result) => {
+    let list = Array.isArray(result.rephraseHistory) ? result.rephraseHistory : [];
+    list = list.filter(item => item.id !== id);
+    chrome.storage.local.set({ rephraseHistory: list }, () => {
+      loadRephraseHistory();
+    });
+  });
+}
+
+function clearAllHistory() {
+  chrome.storage.local.get(['rephraseHistory'], (result) => {
+    const list = Array.isArray(result.rephraseHistory) ? result.rephraseHistory : [];
+    if (list.length === 0) return;
+
+    if (confirm(`Are you sure you want to delete all ${list.length} saved rephrasings from your history? This action cannot be undone.`)) {
+      chrome.storage.local.set({ rephraseHistory: [] }, () => {
+        loadRephraseHistory();
+      });
+    }
+  });
+}
+
+function exportHistory() {
+  chrome.storage.local.get(['rephraseHistory'], (result) => {
+    const list = Array.isArray(result.rephraseHistory) ? result.rephraseHistory : [];
+    if (list.length === 0) {
+      alert("No history records to export.");
+      return;
+    }
+
+    const jsonStr = JSON.stringify(list, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gemini-rephrase-history-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  });
+}
+
 // Tab Switching Navigation
 function initTabs() {
   const tabButtons = document.querySelectorAll('.tab-btn');
@@ -836,6 +1120,47 @@ document.addEventListener('DOMContentLoaded', () => {
       if (proTabBtn) proTabBtn.click();
     });
   }
+
+  const switchToProFromHistoryBtn = document.getElementById('switch-to-pro-from-history-btn');
+  if (switchToProFromHistoryBtn) {
+    switchToProFromHistoryBtn.addEventListener('click', () => {
+      const proTabBtn = document.querySelector('.tab-btn[data-tab="pro"]');
+      if (proTabBtn) proTabBtn.click();
+    });
+  }
+
+  if (historySearchInput) {
+    historySearchInput.addEventListener('input', filterAndRenderHistory);
+  }
+  if (historyClearSearchBtn) {
+    historyClearSearchBtn.addEventListener('click', () => {
+      if (historySearchInput) {
+        historySearchInput.value = '';
+        filterAndRenderHistory();
+        historySearchInput.focus();
+      }
+    });
+  }
+  if (historyStyleFilter) {
+    historyStyleFilter.addEventListener('change', filterAndRenderHistory);
+  }
+  if (historyClearAllBtn) {
+    historyClearAllBtn.addEventListener('click', clearAllHistory);
+  }
+  if (historyExportBtn) {
+    historyExportBtn.addEventListener('click', exportHistory);
+  }
+
+  // Check URL hash for direct tab linking (e.g., #history)
+  const checkUrlHash = () => {
+    const hash = window.location.hash.replace('#', '');
+    if (hash) {
+      const tabBtn = document.querySelector(`.tab-btn[data-tab="${hash}"]`);
+      if (tabBtn) tabBtn.click();
+    }
+  };
+  checkUrlHash();
+  window.addEventListener('hashchange', checkUrlHash);
 });
 
 saveButton.addEventListener('click', saveOptions);

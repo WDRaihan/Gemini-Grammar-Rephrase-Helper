@@ -709,6 +709,65 @@ function parseBuiltInAIAutoCheckResult(rawOutput, cleanText) {
   return { hasErrors: false, correctedText: cleanText, explanation: "" };
 }
 
+/**
+ * Saves rephrasing results to history log for Pro users (capped at last 50 entries).
+ */
+async function saveToRephraseHistory({ originalText, suggestions, style = 'default', customPrompt = '', storedPresets = [], engine = 'gemini-cloud' }) {
+  try {
+    const proInfo = await getProStatus();
+    if (!proInfo.isPro) {
+      return; // History Log is strictly an exclusive Pro feature
+    }
+
+    if (!originalText || !Array.isArray(suggestions) || suggestions.length === 0) {
+      return;
+    }
+
+    const { rephraseHistory = [] } = await chrome.storage.local.get(['rephraseHistory']);
+
+    // Avoid duplicate if identical to top item within 3 seconds
+    if (rephraseHistory.length > 0) {
+      const top = rephraseHistory[0];
+      if (top.originalText === originalText.trim() && top.style === style && (Date.now() - top.timestamp < 3000)) {
+        return;
+      }
+    }
+
+    // Determine readable style label
+    let styleLabel = 'Grammar Fix';
+    if (style === 'formal') styleLabel = 'Make Formal';
+    else if (style === 'simplify') styleLabel = 'Simplify';
+    else if (style === 'bullets') styleLabel = 'Bullet Points';
+    else if (style === 'slack') styleLabel = 'Slack / Chat';
+    else if (style === 'inline-fix') styleLabel = 'Quick Fix';
+    else if (style === 'custom') {
+      styleLabel = customPrompt ? `Custom: ${customPrompt.slice(0, 30)}` : 'Custom Prompt';
+    } else if (Array.isArray(storedPresets)) {
+      const matched = storedPresets.find(p => p.id === style);
+      if (matched && matched.name) {
+        styleLabel = matched.name;
+      } else if (style !== 'default') {
+        styleLabel = style;
+      }
+    }
+
+    const newEntry = {
+      id: `hist_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+      timestamp: Date.now(),
+      originalText: originalText.trim(),
+      suggestions: suggestions.map(s => typeof s === 'string' ? s.trim() : '').filter(Boolean),
+      style: style || 'default',
+      styleLabel,
+      engine: engine || 'gemini-cloud'
+    };
+
+    const updated = [newEntry, ...rephraseHistory].slice(0, 50);
+    await chrome.storage.local.set({ rephraseHistory: updated });
+  } catch (err) {
+    console.warn("Could not save to rephrase history:", err);
+  }
+}
+
 // Common processor for both Context Menu, Shortcut, and Style Selection
 async function processFixGrammar(text, tab, style = 'default', customPrompt = '') {
   if (!text || !tab?.id || isRestrictedUrl(tab.url)) {
@@ -771,6 +830,16 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
       if (suggestions.length === 0) {
         throw new Error("Could not parse suggestions from Chrome Built-in AI.");
       }
+
+      // Save to Pro History Log
+      await saveToRephraseHistory({
+        originalText: text,
+        suggestions,
+        style,
+        customPrompt,
+        storedPresets: syncData.stylePresets || [],
+        engine: 'chrome-ai'
+      });
 
       await chrome.tabs.sendMessage(tab.id, {
         type: 'SHOW_RESULT',
@@ -980,6 +1049,16 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
       throw new Error("Could not parse JSON response from Gemini. Please ensure 'Max Output Tokens' is set to 'No Limit' in Extension Preferences.");
     }
 
+    // Save to Pro History Log
+    await saveToRephraseHistory({
+      originalText: text,
+      suggestions,
+      style,
+      customPrompt,
+      storedPresets: syncData.stylePresets || [],
+      engine: 'gemini-cloud'
+    });
+
     // 6. Send suggestions to content script with style context
     await chrome.tabs.sendMessage(tab.id, {
       type: 'SHOW_RESULT',
@@ -1052,6 +1131,19 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       .then(res => sendResponse({ success: true, ...res }))
       .catch(err => sendResponse({ success: false, error: err.message }));
     return true;
+  }
+
+  if (request.type === 'RECORD_HISTORY_ITEM') {
+    saveToRephraseHistory(request.item || {})
+      .then(() => sendResponse({ success: true }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+
+  if (request.type === 'OPEN_HISTORY_PAGE') {
+    chrome.tabs.create({ url: chrome.runtime.getURL('options.html#history') });
+    sendResponse({ success: true });
+    return false;
   }
 });
 
