@@ -566,10 +566,24 @@ async function copyToClipboard(text, button) {
 let isAutoCheckEnabled = false;
 let autoCheckDebounce = 2500;
 let activeInputElement = null;
-let inlineDebounceTimer = null;
-let currentInlineCorrection = null;
 let activeInlineBadge = null;
 let activeInlinePopover = null;
+
+// Per-element state map to isolate debounce timers, corrections, and statuses across multiple input fields
+const fieldStateMap = new WeakMap();
+
+function getElementState(el) {
+  if (!fieldStateMap.has(el)) {
+    fieldStateMap.set(el, {
+      status: 'idle', // 'idle' | 'checking' | 'has-error' | 'clean'
+      lastCheckedText: '',
+      correction: null, // { originalText, correctedText, explanation }
+      debounceTimer: null,
+      requestId: 0
+    });
+  }
+  return fieldStateMap.get(el);
+}
 
 // Initialize setting from storage
 chrome.storage.sync.get(['autoCheckEnabled', 'autoCheckDebounce'], (result) => {
@@ -660,7 +674,9 @@ function ensureInlineBadge() {
 
   badge.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (badge.classList.contains('has-error') && currentInlineCorrection) {
+    if (!activeInputElement) return;
+    const state = getElementState(activeInputElement);
+    if (badge.classList.contains('has-error') && state.correction) {
       toggleInlinePopover();
     }
   });
@@ -676,7 +692,10 @@ function removeInlineBadge() {
 }
 
 function updateBadgePosition() {
-  if (!activeInlineBadge || !activeInputElement) return;
+  if (!activeInlineBadge || !activeInputElement || !activeInputElement.isConnected) {
+    if (activeInlineBadge) activeInlineBadge.style.display = 'none';
+    return;
+  }
   const rect = activeInputElement.getBoundingClientRect();
   if (rect.width === 0 || rect.height === 0) {
     activeInlineBadge.style.display = 'none';
@@ -705,8 +724,11 @@ function updateBadgePosition() {
 
 function setBadgeState(state, text = '') {
   const badge = ensureInlineBadge();
+  badge.style.opacity = '1';
   badge.className = '';
-  badge.classList.add(state);
+  if (state && state !== 'idle') {
+    badge.classList.add(state);
+  }
 
   const iconEl = badge.querySelector('.gemini-badge-icon');
   const textEl = badge.querySelector('.gemini-badge-text');
@@ -728,8 +750,49 @@ function setBadgeState(state, text = '') {
         }, 300);
       }
     }, 2500);
+  } else {
+    if (iconEl) iconEl.textContent = '✦';
+    if (textEl) textEl.textContent = text || 'Gemini';
   }
   updateBadgePosition();
+}
+
+function syncBadgeWithElement(el) {
+  if (!isAutoCheckEnabled || !el || !isEditableInput(el)) {
+    removeInlineBadge();
+    removeInlinePopover();
+    return;
+  }
+
+  // Dismiss any open popover from previous field
+  removeInlinePopover();
+
+  const text = getFieldText(el).trim();
+  if (text.length < 15) {
+    removeInlineBadge();
+    return;
+  }
+
+  const state = getElementState(el);
+
+  // If text changed since last correction was retrieved, invalidate stale correction
+  if (state.correction && state.correction.originalText !== text) {
+    state.correction = null;
+    state.status = 'idle';
+  }
+
+  ensureInlineBadge();
+  updateBadgePosition();
+
+  if (state.status === 'has-error' && state.correction) {
+    setBadgeState('has-error', 'Fix Available');
+  } else if (state.status === 'checking') {
+    setBadgeState('checking');
+  } else if (state.status === 'clean' && state.lastCheckedText === text) {
+    setBadgeState('clean', 'Looking good');
+  } else {
+    setBadgeState('idle', 'Gemini');
+  }
 }
 
 function positionInlinePopover() {
@@ -753,7 +816,21 @@ function toggleInlinePopover() {
     removeInlinePopover();
     return;
   }
-  if (!currentInlineCorrection || !activeInputElement) return;
+  if (!activeInputElement) return;
+
+  const targetElement = activeInputElement; // Lock target element for apply fix
+  const state = getElementState(targetElement);
+  if (!state.correction) return;
+
+  const currentFieldText = getFieldText(targetElement).trim();
+  if (currentFieldText !== state.correction.originalText) {
+    state.correction = null;
+    state.status = 'idle';
+    syncBadgeWithElement(targetElement);
+    return;
+  }
+
+  const correction = state.correction;
 
   const popover = document.createElement('div');
   popover.id = 'gemini-inline-popover';
@@ -763,12 +840,12 @@ function toggleInlinePopover() {
       <button class="popover-close" aria-label="Close">&times;</button>
     </div>
     <div class="popover-body">
-      <p class="popover-explanation">${escapeHTML(currentInlineCorrection.explanation || 'Suggested grammar and spelling fix:')}</p>
+      <p class="popover-explanation">${escapeHTML(correction.explanation || 'Suggested grammar and spelling fix:')}</p>
       <div class="popover-diff">
         <div style="color: #94a3b8; font-size: 11px; margin-bottom: 2px;">BEFORE</div>
-        <del>${escapeHTML(currentInlineCorrection.originalText)}</del>
+        <del>${escapeHTML(correction.originalText)}</del>
         <div style="color: #166534; font-size: 11px; margin: 8px 0 2px 0; font-weight: 600;">SUGGESTION</div>
-        <ins>${escapeHTML(currentInlineCorrection.correctedText)}</ins>
+        <ins>${escapeHTML(correction.correctedText)}</ins>
       </div>
       <div class="popover-actions">
         <button class="btn-apply-fix">Apply Fix</button>
@@ -781,14 +858,23 @@ function toggleInlinePopover() {
   activeInlinePopover = popover;
   positionInlinePopover();
 
+  popover.addEventListener('mousedown', (e) => {
+    e.stopPropagation();
+  });
+
   popover.querySelector('.popover-close').addEventListener('click', removeInlinePopover);
   popover.querySelector('.btn-dismiss-fix').addEventListener('click', removeInlinePopover);
 
   popover.querySelector('.btn-apply-fix').addEventListener('click', () => {
-    if (activeInputElement && currentInlineCorrection) {
-      setFieldText(activeInputElement, currentInlineCorrection.correctedText);
-      setBadgeState('clean', 'Fixed!');
-      currentInlineCorrection = null;
+    if (targetElement && correction) {
+      setFieldText(targetElement, correction.correctedText);
+      const st = getElementState(targetElement);
+      st.status = 'clean';
+      st.lastCheckedText = correction.correctedText.trim();
+      st.correction = null;
+      if (activeInputElement === targetElement) {
+        setBadgeState('clean', 'Fixed!');
+      }
       removeInlinePopover();
     }
   });
@@ -803,29 +889,64 @@ function removeInlinePopover() {
 
 function scheduleInlineCheck(el) {
   if (!isAutoCheckEnabled || !isEditableInput(el)) return;
-  activeInputElement = el;
+  const state = getElementState(el);
 
-  if (inlineDebounceTimer) {
-    clearTimeout(inlineDebounceTimer);
+  if (state.debounceTimer) {
+    clearTimeout(state.debounceTimer);
+    state.debounceTimer = null;
   }
 
   const text = getFieldText(el).trim();
   if (text.length < 15) {
-    removeInlineBadge();
-    removeInlinePopover();
+    state.correction = null;
+    state.status = 'idle';
+    state.lastCheckedText = '';
+    if (activeInputElement === el) {
+      removeInlineBadge();
+      removeInlinePopover();
+    }
     return;
   }
 
-  // Show idle/checking badge position
-  ensureInlineBadge();
-  updateBadgePosition();
+  // If text already matches what was previously verified clean, avoid duplicate network check
+  if (state.lastCheckedText === text && state.status === 'clean') {
+    if (activeInputElement === el) {
+      setBadgeState('clean', 'Looking good');
+    }
+    return;
+  }
+
+  // If text matches current valid correction, maintain has-error
+  if (state.correction && state.correction.originalText === text) {
+    if (activeInputElement === el) {
+      setBadgeState('has-error', 'Fix Available');
+    }
+    return;
+  }
+
+  // Text is modified or not yet verified
+  state.correction = null;
+  state.status = 'idle';
+
+  if (activeInputElement === el) {
+    ensureInlineBadge();
+    setBadgeState('idle', 'Gemini');
+    updateBadgePosition();
+  }
+
+  const currentReqId = ++state.requestId;
 
   // Wait debounce delay after user finishes typing
-  inlineDebounceTimer = setTimeout(async () => {
+  state.debounceTimer = setTimeout(async () => {
+    state.debounceTimer = null;
     const currentText = getFieldText(el).trim();
     if (currentText.length < 15) return;
+    if (state.requestId !== currentReqId) return;
 
-    setBadgeState('checking');
+    state.status = 'checking';
+    if (activeInputElement === el) {
+      setBadgeState('checking');
+    }
 
     try {
       const response = await chrome.runtime.sendMessage({
@@ -833,24 +954,44 @@ function scheduleInlineCheck(el) {
         text: currentText
       });
 
+      // Guard against race conditions: verify this is still the freshest request and text didn't change
+      if (state.requestId !== currentReqId) return;
+      if (getFieldText(el).trim() !== currentText) return;
+
       if (!response?.success) {
-        removeInlineBadge();
+        state.status = 'idle';
+        if (activeInputElement === el) {
+          removeInlineBadge();
+        }
         return;
       }
 
-      if (response.hasErrors && response.correctedText) {
-        currentInlineCorrection = {
+      state.lastCheckedText = currentText;
+
+      if (response.hasErrors && response.correctedText && response.correctedText !== currentText) {
+        state.correction = {
           originalText: currentText,
           correctedText: response.correctedText,
-          explanation: response.explanation
+          explanation: response.explanation || 'Grammar & spelling fix'
         };
-        setBadgeState('has-error', 'Fix Available');
+        state.status = 'has-error';
+
+        // CRITICAL: Only update badge UI if this element is STILL the active focused element
+        if (activeInputElement === el) {
+          setBadgeState('has-error', 'Fix Available');
+        }
       } else {
-        currentInlineCorrection = null;
-        setBadgeState('clean', 'Looking good');
+        state.correction = null;
+        state.status = 'clean';
+        if (activeInputElement === el) {
+          setBadgeState('clean', 'Looking good');
+        }
       }
     } catch (_) {
-      removeInlineBadge();
+      state.status = 'idle';
+      if (activeInputElement === el) {
+        removeInlineBadge();
+      }
     }
   }, autoCheckDebounce);
 }
@@ -859,16 +1000,29 @@ function scheduleInlineCheck(el) {
 document.addEventListener('focusin', (e) => {
   if (isAutoCheckEnabled && isEditableInput(e.target)) {
     activeInputElement = e.target;
-    const text = getFieldText(e.target).trim();
-    if (text.length >= 15) {
-      ensureInlineBadge();
-      updateBadgePosition();
-    }
+    syncBadgeWithElement(e.target);
+    scheduleInlineCheck(e.target);
+  }
+}, true);
+
+document.addEventListener('focusout', (e) => {
+  if (isAutoCheckEnabled && isEditableInput(e.target)) {
+    setTimeout(() => {
+      const currentFocus = document.activeElement;
+      if (!isEditableInput(currentFocus) && 
+          !currentFocus?.closest?.('#gemini-inline-popover') && 
+          !currentFocus?.closest?.('#gemini-inline-badge')) {
+        if (!activeInlinePopover) {
+          removeInlineBadge();
+        }
+      }
+    }, 120);
   }
 }, true);
 
 document.addEventListener('input', (e) => {
   if (isAutoCheckEnabled && isEditableInput(e.target)) {
+    activeInputElement = e.target;
     scheduleInlineCheck(e.target);
   }
 }, true);
@@ -876,6 +1030,9 @@ document.addEventListener('input', (e) => {
 document.addEventListener('click', (e) => {
   if (activeInlinePopover && !e.target.closest('#gemini-inline-popover') && !e.target.closest('#gemini-inline-badge')) {
     removeInlinePopover();
+    if (!isEditableInput(document.activeElement)) {
+      removeInlineBadge();
+    }
   }
 });
 
