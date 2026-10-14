@@ -28,14 +28,14 @@
     height: 100% !important;
     background-color: rgba(0, 0, 0, 0.6) !important;
     backdrop-filter: blur(4px) !important;
-    z-index: 1 !important;
+    z-index: 2147483646 !important;
     margin: 0 !important;
     padding: 0 !important;
 }
 
 #gemini-modal-content {
     position: relative !important;
-    z-index: 2 !important;
+    z-index: 2147483647 !important;
     width: 100% !important;
     max-width: 600px !important;
     max-height: 85vh !important;
@@ -501,8 +501,8 @@
    ========================================================================== */
 
 #gemini-inline-badge {
-    position: absolute !important;
-    z-index: 2147483640 !important;
+    position: fixed !important;
+    z-index: 2147483647 !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -632,8 +632,8 @@
 
 /* Inline Popover Card */
 #gemini-inline-popover {
-    position: absolute !important;
-    z-index: 2147483645 !important;
+    position: fixed !important;
+    z-index: 2147483647 !important;
     width: 320px !important;
     max-width: calc(100vw - 32px) !important;
     background: #ffffff !important;

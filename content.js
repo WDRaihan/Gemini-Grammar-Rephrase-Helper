@@ -153,7 +153,21 @@ function showModal(contentHTML) {
     </div>
   `;
 
-  document.body.appendChild(modal);
+  // Append inside the topmost active modal/dialog if one exists, or document.body as the last child
+  const activeDialog = document.querySelector('dialog[open], #artdeco-modal-outlet, .artdeco-modal-overlay, [role="dialog"][aria-modal="true"]');
+  const targetParent = (activeDialog && activeDialog.contains(document.activeElement)) ? activeDialog : document.body;
+  targetParent.appendChild(modal);
+
+  // Apply maximum integer z-index inline to guarantee overriding any host site styles
+  modal.style.setProperty('z-index', '2147483647', 'important');
+  const modalContent = modal.querySelector('#gemini-modal-content');
+  if (modalContent) {
+    modalContent.style.setProperty('z-index', '2147483647', 'important');
+  }
+  const modalOverlay = modal.querySelector('#gemini-modal-overlay');
+  if (modalOverlay) {
+    modalOverlay.style.setProperty('z-index', '2147483646', 'important');
+  }
 
   document.getElementById('gemini-modal-close-btn').addEventListener('click', closeModal);
   document.getElementById('gemini-modal-overlay').addEventListener('click', closeModal);
@@ -619,59 +633,134 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
 });
 
-function isEditableInput(element) {
-  if (!element || !(element instanceof HTMLElement)) return false;
-  if (element.tagName === 'TEXTAREA') return true;
-  if (element.tagName === 'INPUT') {
-    const type = (element.getAttribute('type') || 'text').toLowerCase();
-    return ['text', 'search', 'email', 'url'].includes(type);
+function getRootEditableElement(element) {
+  if (!element) return null;
+  const el = element.nodeType === Node.TEXT_NODE ? element.parentElement : element;
+  if (!el || !(el instanceof HTMLElement)) return null;
+
+  // Never target our own extension UI elements
+  if (el.closest('#gemini-inline-badge') || el.closest('#gemini-inline-popover') || el.closest('#gemini-rephrase-modal')) {
+    return null;
   }
-  if (element.isContentEditable) return true;
-  return false;
+
+  // 1. Textarea and standard text inputs
+  if (el.tagName === 'TEXTAREA') return el;
+  if (el.tagName === 'INPUT') {
+    const type = (el.getAttribute('type') || 'text').toLowerCase();
+    return ['text', 'search', 'email', 'url'].includes(type) ? el : null;
+  }
+
+  // 2. Clicked on a wrapper container that holds an editor (e.g. white space in LinkedIn post modal)
+  if (el.matches?.('.share-creation-state__text-editor, .share-box-feed-entry__text-editor, .editor-content, .share-creation-state, .artdeco-modal__content')) {
+    const innerEditor = el.querySelector('[contenteditable="true"], [contenteditable="plaintext-only"], .ql-editor');
+    if (innerEditor && innerEditor instanceof HTMLElement) return innerEditor;
+  }
+
+  // 3. Recognized rich text editor containers (LinkedIn Quill post editor, LinkedIn Message editor, Draft.js, etc.)
+  const knownEditor = el.closest('.ql-editor, .msg-form__contenteditable, [role="textbox"], [data-placeholder][contenteditable], [contenteditable="true"], [contenteditable="plaintext-only"]');
+  if (knownEditor && knownEditor instanceof HTMLElement) {
+    return knownEditor;
+  }
+
+  // 4. Generic contenteditable: traverse upwards to find outermost editable element
+  if (el.isContentEditable) {
+    let curr = el;
+    while (curr.parentElement && curr.parentElement.isContentEditable) {
+      curr = curr.parentElement;
+    }
+    return curr;
+  }
+
+  return null;
+}
+
+function isEditableInput(element) {
+  return Boolean(getRootEditableElement(element));
+}
+
+function getModalContainer(el) {
+  if (!el || !(el instanceof HTMLElement)) return document.body;
+  return el.closest('dialog, .artdeco-modal, [role="dialog"], #artdeco-modal-outlet') || document.body;
+}
+
+function getComposerBounds(el) {
+  if (!el) return null;
+  // For LinkedIn post creation modal, find the text-editor container for clean bottom-right docking
+  const composerWrapper = el.closest('.share-creation-state__text-editor, .share-box-feed-entry__text-editor, .editor-content, .share-creation-state');
+  if (composerWrapper && composerWrapper instanceof HTMLElement) {
+    const wrapRect = composerWrapper.getBoundingClientRect();
+    if (wrapRect.width > 50 && wrapRect.height > 50) {
+      return wrapRect;
+    }
+  }
+  return el.getBoundingClientRect();
 }
 
 function getFieldText(el) {
-  if (!el) return '';
-  if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
-    return el.value || '';
+  const root = getRootEditableElement(el);
+  if (!root) return '';
+  if (root.tagName === 'TEXTAREA' || root.tagName === 'INPUT') {
+    return root.value || '';
   }
-  if (el.isContentEditable) {
-    return el.innerText || '';
+  if (root.isContentEditable) {
+    return root.innerText || root.textContent || '';
   }
   return '';
 }
 
 function setFieldText(el, newText) {
-  if (!el) return false;
-  if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT') {
-    el.focus();
+  const root = getRootEditableElement(el);
+  if (!root) return false;
+
+  if (root.tagName === 'TEXTAREA' || root.tagName === 'INPUT') {
+    root.focus();
     try {
-      el.setSelectionRange(0, el.value.length);
+      root.setSelectionRange(0, root.value.length);
       const ok = document.execCommand('insertText', false, newText);
       if (!ok) throw new Error();
     } catch (_) {
-      el.value = newText;
+      root.value = newText;
     }
-    el.dispatchEvent(new Event('input', { bubbles: true }));
-    el.dispatchEvent(new Event('change', { bubbles: true }));
+    root.dispatchEvent(new Event('input', { bubbles: true }));
+    root.dispatchEvent(new Event('change', { bubbles: true }));
     return true;
   }
-  if (el.isContentEditable) {
-    el.focus();
+
+  if (root.isContentEditable) {
+    root.focus();
     try {
       document.execCommand('selectAll', false, null);
-      document.execCommand('insertText', false, newText);
+      const ok = document.execCommand('insertText', false, newText);
+      if (!ok) throw new Error();
     } catch (_) {
-      el.innerText = newText;
+      root.innerText = newText;
     }
-    el.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Dispatch synthetic InputEvent so React/Quill/Draft.js internal state updates reliably
+    try {
+      root.dispatchEvent(new InputEvent('input', {
+        bubbles: true,
+        cancelable: true,
+        inputType: 'insertText',
+        data: newText
+      }));
+    } catch (_) {
+      root.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+    root.dispatchEvent(new Event('change', { bubbles: true }));
     return true;
   }
   return false;
 }
 
-function ensureInlineBadge() {
-  if (activeInlineBadge) return activeInlineBadge;
+function ensureInlineBadge(targetEl) {
+  const container = getModalContainer(targetEl || activeInputElement);
+  if (activeInlineBadge) {
+    if (activeInlineBadge.parentElement !== container) {
+      container.appendChild(activeInlineBadge);
+    }
+    return activeInlineBadge;
+  }
   const badge = document.createElement('div');
   badge.id = 'gemini-inline-badge';
 
@@ -684,7 +773,7 @@ function ensureInlineBadge() {
     <span class="gemini-badge-fallback-icon" style="display:none;font-size:12px;color:#2563eb;line-height:1;">✦</span>
     <span class="gemini-badge-dot"></span>
   `;
-  document.body.appendChild(badge);
+  container.appendChild(badge);
   activeInlineBadge = badge;
 
   badge.addEventListener('mousedown', (e) => {
@@ -715,29 +804,33 @@ function updateBadgePosition() {
     if (activeInlineBadge) activeInlineBadge.style.display = 'none';
     return;
   }
-  const rect = activeInputElement.getBoundingClientRect();
-  if (rect.width === 0 || rect.height === 0) {
+  const rect = getComposerBounds(activeInputElement);
+  if (!rect || rect.width === 0 || rect.height === 0 || rect.bottom < 15 || rect.top > window.innerHeight - 15 || rect.right < 15 || rect.left > window.innerWidth - 15) {
     activeInlineBadge.style.display = 'none';
     return;
   }
 
   activeInlineBadge.style.display = 'inline-flex';
   const badgeSize = 24;
-  const isSingleLine = rect.height < 45;
+  const isSingleLine = activeInputElement.tagName === 'INPUT';
   let top, left;
 
   if (isSingleLine) {
     // Vertically center inside single-line inputs
-    top = window.scrollY + rect.top + (rect.height - badgeSize) / 2;
-    left = window.scrollX + rect.right - badgeSize - 8;
+    top = rect.top + (rect.height - badgeSize) / 2;
+    left = rect.right - badgeSize - 8;
   } else {
     // Bottom-right corner for textareas & multi-line inputs
-    top = window.scrollY + rect.bottom - badgeSize - 8;
-    left = window.scrollX + rect.right - badgeSize - 10;
+    // Clamp to viewport boundary in case of large or scrolling modal editors
+    const visibleBottom = Math.min(rect.bottom, window.innerHeight - 10);
+    const visibleRight = Math.min(rect.right, window.innerWidth - 10);
+    top = visibleBottom - badgeSize - 10;
+    left = visibleRight - badgeSize - 12;
   }
 
-  activeInlineBadge.style.top = `${Math.max(0, top)}px`;
-  activeInlineBadge.style.left = `${Math.max(0, left)}px`;
+  activeInlineBadge.style.position = 'fixed';
+  activeInlineBadge.style.top = `${Math.max(8, top)}px`;
+  activeInlineBadge.style.left = `${Math.max(8, left)}px`;
 
   if (activeInlinePopover) {
     positionInlinePopover();
@@ -776,7 +869,8 @@ function setBadgeState(state, tooltipText = '') {
 }
 
 function syncBadgeWithElement(el) {
-  if (!isAutoCheckEnabled || !el || !isEditableInput(el)) {
+  const root = getRootEditableElement(el);
+  if (!isAutoCheckEnabled || !root) {
     removeInlineBadge();
     removeInlinePopover();
     return;
@@ -785,13 +879,16 @@ function syncBadgeWithElement(el) {
   // Dismiss any open popover from previous field
   removeInlinePopover();
 
-  const text = getFieldText(el).trim();
-  if (text.length < 15) {
+  const text = getFieldText(root).trim();
+  const isMultiLine = root.tagName === 'TEXTAREA' || root.isContentEditable || root.clientHeight > 45;
+
+  // On single-line inputs, require at least 3 chars to prevent cluttering tiny search fields
+  if (!isMultiLine && text.length < 3) {
     removeInlineBadge();
     return;
   }
 
-  const state = getElementState(el);
+  const state = getElementState(root);
 
   // If text changed since last correction was retrieved, invalidate stale correction
   if (state.correction && state.correction.originalText !== text) {
@@ -817,16 +914,20 @@ function positionInlinePopover() {
   if (!activeInlinePopover || !activeInlineBadge) return;
   const badgeRect = activeInlineBadge.getBoundingClientRect();
   const popoverWidth = 320;
-  let top = window.scrollY + badgeRect.top - 210;
-  let left = window.scrollX + badgeRect.right - popoverWidth;
+  let top = badgeRect.top - 210;
+  let left = badgeRect.right - popoverWidth;
 
   if (badgeRect.top < 230) {
-    top = window.scrollY + badgeRect.bottom + 8;
+    top = badgeRect.bottom + 8;
   }
   if (left < 10) left = 10;
+  if (left + popoverWidth > window.innerWidth - 10) {
+    left = window.innerWidth - popoverWidth - 10;
+  }
 
-  activeInlinePopover.style.top = `${top}px`;
-  activeInlinePopover.style.left = `${left}px`;
+  activeInlinePopover.style.position = 'fixed';
+  activeInlinePopover.style.top = `${Math.max(10, top)}px`;
+  activeInlinePopover.style.left = `${Math.max(10, left)}px`;
 }
 
 function toggleInlinePopover() {
@@ -882,7 +983,8 @@ function toggleInlinePopover() {
     </div>
   `;
 
-  document.body.appendChild(popover);
+  const popoverContainer = getModalContainer(targetElement);
+  popoverContainer.appendChild(popover);
   activeInlinePopover = popover;
   positionInlinePopover();
 
@@ -932,21 +1034,28 @@ function removeInlinePopover() {
 }
 
 function scheduleInlineCheck(el) {
-  if (!isAutoCheckEnabled || !isEditableInput(el)) return;
-  const state = getElementState(el);
+  const root = getRootEditableElement(el);
+  if (!isAutoCheckEnabled || !root) return;
+  const state = getElementState(root);
 
   if (state.debounceTimer) {
     clearTimeout(state.debounceTimer);
     state.debounceTimer = null;
   }
 
-  const text = getFieldText(el).trim();
-  if (text.length < 15) {
+  const text = getFieldText(root).trim();
+  const isMultiLine = root.tagName === 'TEXTAREA' || root.isContentEditable || root.clientHeight > 45;
+
+  if (text.length < 8) {
     state.correction = null;
     state.status = 'idle';
     state.lastCheckedText = '';
-    if (activeInputElement === el) {
-      removeInlineBadge();
+    if (activeInputElement === root) {
+      if (isMultiLine) {
+        setBadgeState('idle', 'Gemini');
+      } else {
+        removeInlineBadge();
+      }
       removeInlinePopover();
     }
     return;
@@ -954,7 +1063,7 @@ function scheduleInlineCheck(el) {
 
   // If text already matches what was previously verified clean, avoid duplicate network check
   if (state.lastCheckedText === text && state.status === 'clean') {
-    if (activeInputElement === el) {
+    if (activeInputElement === root) {
       setBadgeState('clean', 'Looking good');
     }
     return;
@@ -962,7 +1071,7 @@ function scheduleInlineCheck(el) {
 
   // If text matches current valid correction, maintain has-error
   if (state.correction && state.correction.originalText === text) {
-    if (activeInputElement === el) {
+    if (activeInputElement === root) {
       setBadgeState('has-error', 'Fix Available');
     }
     return;
@@ -972,7 +1081,7 @@ function scheduleInlineCheck(el) {
   state.correction = null;
   state.status = 'idle';
 
-  if (activeInputElement === el) {
+  if (activeInputElement === root) {
     ensureInlineBadge();
     setBadgeState('idle', 'Gemini');
     updateBadgePosition();
@@ -983,12 +1092,12 @@ function scheduleInlineCheck(el) {
   // Wait debounce delay after user finishes typing
   state.debounceTimer = setTimeout(async () => {
     state.debounceTimer = null;
-    const currentText = getFieldText(el).trim();
-    if (currentText.length < 15) return;
+    const currentText = getFieldText(root).trim();
+    if (currentText.length < 8) return;
     if (state.requestId !== currentReqId) return;
 
     state.status = 'checking';
-    if (activeInputElement === el) {
+    if (activeInputElement === root) {
       setBadgeState('checking');
     }
 
@@ -1000,7 +1109,7 @@ function scheduleInlineCheck(el) {
 
       // Guard against race conditions: verify this is still the freshest request and text didn't change
       if (state.requestId !== currentReqId) return;
-      if (getFieldText(el).trim() !== currentText) return;
+      if (getFieldText(root).trim() !== currentText) return;
 
       if (typeof response?.isPro === 'boolean') {
         isProUser = response.isPro;
@@ -1008,8 +1117,8 @@ function scheduleInlineCheck(el) {
 
       if (!response?.success) {
         state.status = 'idle';
-        if (activeInputElement === el) {
-          removeInlineBadge();
+        if (activeInputElement === root) {
+          setBadgeState('idle', 'Gemini');
         }
         return;
       }
@@ -1025,20 +1134,20 @@ function scheduleInlineCheck(el) {
         state.status = 'has-error';
 
         // CRITICAL: Only update badge UI if this element is STILL the active focused element
-        if (activeInputElement === el) {
+        if (activeInputElement === root) {
           setBadgeState('has-error', 'Fix Available');
         }
       } else {
         state.correction = null;
         state.status = 'clean';
-        if (activeInputElement === el) {
+        if (activeInputElement === root) {
           setBadgeState('clean', 'Looking good');
         }
       }
     } catch (_) {
       state.status = 'idle';
-      if (activeInputElement === el) {
-        removeInlineBadge();
+      if (activeInputElement === root) {
+        setBadgeState('idle', 'Gemini');
       }
     }
   }, autoCheckDebounce);
@@ -1046,44 +1155,105 @@ function scheduleInlineCheck(el) {
 
 // Global delegated event listeners for real-time checking
 document.addEventListener('focusin', (e) => {
-  if (isAutoCheckEnabled && isEditableInput(e.target)) {
-    activeInputElement = e.target;
-    syncBadgeWithElement(e.target);
-    scheduleInlineCheck(e.target);
+  if (!isAutoCheckEnabled) return;
+  const root = getRootEditableElement(e.target);
+  if (root) {
+    activeInputElement = root;
+    syncBadgeWithElement(root);
+    scheduleInlineCheck(root);
   }
 }, true);
 
 document.addEventListener('focusout', (e) => {
-  if (isAutoCheckEnabled && isEditableInput(e.target)) {
+  if (!isAutoCheckEnabled) return;
+  const root = getRootEditableElement(e.target);
+  if (root) {
     setTimeout(() => {
-      const currentFocus = document.activeElement;
-      if (!isEditableInput(currentFocus) && 
-          !currentFocus?.closest?.('#gemini-inline-popover') && 
-          !currentFocus?.closest?.('#gemini-inline-badge')) {
+      const currentFocus = getRootEditableElement(document.activeElement);
+      // If still inside the same modal dialog (e.g. clicking an emoji button, Proofread button, or modal whitespace), keep badge active
+      const modalDialog = activeInputElement?.closest?.('dialog, .artdeco-modal, [role="dialog"], #artdeco-modal-outlet');
+      const activeModal = document.activeElement?.closest?.('dialog, .artdeco-modal, [role="dialog"], #artdeco-modal-outlet');
+      const stillInSameModal = modalDialog && activeModal && (modalDialog === activeModal);
+
+      if (!currentFocus && !stillInSameModal && 
+          !document.activeElement?.closest?.('#gemini-inline-popover') && 
+          !document.activeElement?.closest?.('#gemini-inline-badge')) {
         if (!activeInlinePopover) {
           removeInlineBadge();
         }
       }
-    }, 120);
+    }, 200);
   }
 }, true);
 
-document.addEventListener('input', (e) => {
-  if (isAutoCheckEnabled && isEditableInput(e.target)) {
-    activeInputElement = e.target;
-    scheduleInlineCheck(e.target);
+const handleTypingEvent = (e) => {
+  if (!isAutoCheckEnabled) return;
+  const root = getRootEditableElement(e.target);
+  if (root) {
+    if (activeInputElement !== root) {
+      activeInputElement = root;
+      syncBadgeWithElement(root);
+    }
+    scheduleInlineCheck(root);
   }
-}, true);
+};
+
+document.addEventListener('input', handleTypingEvent, true);
+document.addEventListener('keyup', handleTypingEvent, true);
 
 document.addEventListener('click', (e) => {
+  if (!isAutoCheckEnabled) return;
+
   if (activeInlinePopover && !e.target.closest('#gemini-inline-popover') && !e.target.closest('#gemini-inline-badge')) {
     removeInlinePopover();
-    if (!isEditableInput(document.activeElement)) {
+    if (!getRootEditableElement(document.activeElement)) {
       removeInlineBadge();
+      return;
+    }
+  }
+
+  const root = getRootEditableElement(e.target);
+  if (root) {
+    activeInputElement = root;
+    syncBadgeWithElement(root);
+  }
+}, true);
+
+document.addEventListener('selectionchange', () => {
+  if (!isAutoCheckEnabled) return;
+  const root = getRootEditableElement(document.activeElement);
+  if (root) {
+    if (activeInputElement !== root) {
+      activeInputElement = root;
+      syncBadgeWithElement(root);
+    } else {
+      updateBadgePosition();
     }
   }
 });
 
-window.addEventListener('scroll', updateBadgePosition, { passive: true });
+// Capture-phase scroll listener ensures scrolling inside modals/chatboxes updates position
+window.addEventListener('scroll', updateBadgePosition, { passive: true, capture: true });
 window.addEventListener('resize', updateBadgePosition, { passive: true });
+
+// MutationObserver to immediately detect when LinkedIn post modal / share box mounts
+if (typeof MutationObserver !== 'undefined') {
+  const modalObserver = new MutationObserver(() => {
+    if (!isAutoCheckEnabled) return;
+    const postEditor = document.querySelector('.artdeco-modal [contenteditable="true"], .share-creation-state [contenteditable="true"], [role="dialog"] .ql-editor');
+    if (postEditor && postEditor !== activeInputElement && postEditor.offsetParent !== null) {
+      // Auto-activate for the modal post editor if focused or open
+      if (document.activeElement === postEditor || postEditor.contains(document.activeElement) || !activeInputElement) {
+        activeInputElement = postEditor;
+        syncBadgeWithElement(postEditor);
+        scheduleInlineCheck(postEditor);
+      }
+    }
+  });
+
+  modalObserver.observe(document.body, {
+    childList: true,
+    subtree: true
+  });
+}
 

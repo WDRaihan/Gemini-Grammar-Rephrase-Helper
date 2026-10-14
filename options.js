@@ -107,8 +107,17 @@ async function checkChromeBuiltInAIStatus() {
 
   try {
     let availableStatus = 'readily';
+    const modelOptions = {
+      expectedInputs: [{ type: 'text', languages: ['en'] }],
+      expectedOutputs: [{ type: 'text', languages: ['en'] }]
+    };
+
     if (typeof ModelAPI.availability === 'function') {
-      availableStatus = await ModelAPI.availability();
+      try {
+        availableStatus = await ModelAPI.availability(modelOptions);
+      } catch (_) {
+        availableStatus = await ModelAPI.availability();
+      }
     } else if (typeof ModelAPI.capabilities === 'function') {
       const caps = await ModelAPI.capabilities();
       availableStatus = caps?.available || 'readily';

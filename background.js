@@ -528,11 +528,21 @@ Respond strictly in valid JSON format:
  * First checks service worker scope (Chrome 138+ / flags), then falls back to tab script execution.
  */
 async function executePromptWithBuiltInAI(promptText, tab) {
+  const modelOptions = {
+    expectedInputs: [{ type: 'text', languages: ['en'] }],
+    expectedOutputs: [{ type: 'text', languages: ['en'] }]
+  };
+
   // Helper to check availability and create session on any Prompt API interface
   const runModelSession = async (ModelAPI) => {
     let isAvailable = false;
     if (typeof ModelAPI.availability === 'function') {
-      const avail = await ModelAPI.availability();
+      let avail;
+      try {
+        avail = await ModelAPI.availability(modelOptions);
+      } catch (_) {
+        avail = await ModelAPI.availability();
+      }
       isAvailable = (avail !== 'no' && avail !== 'unavailable');
     } else if (typeof ModelAPI.capabilities === 'function') {
       const caps = await ModelAPI.capabilities();
@@ -545,7 +555,13 @@ async function executePromptWithBuiltInAI(promptText, tab) {
       throw new Error("PROMPT_API_UNAVAILABLE");
     }
 
-    const session = await ModelAPI.create();
+    let session;
+    try {
+      session = await ModelAPI.create(modelOptions);
+    } catch (_) {
+      session = await ModelAPI.create();
+    }
+
     try {
       return await session.prompt(promptText);
     } finally {
@@ -576,9 +592,19 @@ async function executePromptWithBuiltInAI(promptText, tab) {
             throw new Error("PROMPT_API_UNSUPPORTED");
           }
 
+          const modelOptions = {
+            expectedInputs: [{ type: 'text', languages: ['en'] }],
+            expectedOutputs: [{ type: 'text', languages: ['en'] }]
+          };
+
           let isAvail = false;
           if (typeof TabModelAPI.availability === 'function') {
-            const avail = await TabModelAPI.availability();
+            let avail;
+            try {
+              avail = await TabModelAPI.availability(modelOptions);
+            } catch (_) {
+              avail = await TabModelAPI.availability();
+            }
             isAvail = (avail !== 'no' && avail !== 'unavailable');
           } else if (typeof TabModelAPI.capabilities === 'function') {
             const caps = await TabModelAPI.capabilities();
@@ -591,7 +617,13 @@ async function executePromptWithBuiltInAI(promptText, tab) {
             throw new Error("PROMPT_API_UNAVAILABLE");
           }
 
-          const session = await TabModelAPI.create();
+          let session;
+          try {
+            session = await TabModelAPI.create(modelOptions);
+          } catch (_) {
+            session = await TabModelAPI.create();
+          }
+
           try {
             return await session.prompt(pText);
           } finally {
