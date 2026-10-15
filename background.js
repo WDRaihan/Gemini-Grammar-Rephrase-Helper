@@ -1147,7 +1147,7 @@ async function handleAutoCheckGrammar(text, tab) {
   }
 
   const cleanText = text.trim();
-  if (cleanText.length < 15) {
+  if (cleanText.length < 2) {
     return { hasErrors: false };
   }
 

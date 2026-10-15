@@ -689,11 +689,58 @@ function getElementState(el) {
   return fieldStateMap.get(el);
 }
 
+let autoCheckThresholdVal = 1;
+let autoCheckThresholdUnit = 'word_space';
+
+/**
+ * Evaluates whether text meets the minimum auto-check threshold.
+ * Default is 1 word followed by whitespace (e.g. typing a word and pressing space).
+ * Pro users can configure threshold count (val) and unit (word_space, words, letters).
+ */
+function hasMetAutoCheckThreshold(rawText, val = 1, unit = 'word_space') {
+  if (!rawText || typeof rawText !== 'string') return false;
+
+  const targetCount = Math.max(1, Number(val) || 1);
+
+  if (unit === 'word_space') {
+    // Trim leading whitespace so initial indentation/newlines don't count as completed words
+    const trimmedLeading = rawText.replace(/^\s+/, '');
+    // Match non-whitespace words that are followed by at least one whitespace character
+    const completedWords = (trimmedLeading.match(/\S+\s+/g) || []).length;
+    return completedWords >= targetCount;
+  }
+
+  if (unit === 'words') {
+    const trimmed = rawText.trim();
+    if (!trimmed) return false;
+    const words = trimmed.match(/\S+/g) || [];
+    return words.length >= targetCount;
+  }
+
+  if (unit === 'letters') {
+    const trimmed = rawText.trim();
+    return trimmed.length >= targetCount;
+  }
+
+  return rawText.trim().length >= 1;
+}
+
 // Initialize setting from storage
-chrome.storage.sync.get(['autoCheckEnabled', 'autoCheckDebounce'], (result) => {
+chrome.storage.sync.get(['autoCheckEnabled', 'autoCheckDebounce', 'autoCheckThresholdVal', 'autoCheckThresholdUnit', 'isPro'], (result) => {
   isAutoCheckEnabled = result.autoCheckEnabled === true;
   if (result.autoCheckDebounce) {
     autoCheckDebounce = Number(result.autoCheckDebounce) || 2500;
+  }
+  const isPro = result.isPro === true;
+  if (isPro && typeof result.autoCheckThresholdVal !== 'undefined') {
+    autoCheckThresholdVal = Math.max(1, Number(result.autoCheckThresholdVal) || 1);
+  } else {
+    autoCheckThresholdVal = 1;
+  }
+  if (isPro && result.autoCheckThresholdUnit) {
+    autoCheckThresholdUnit = result.autoCheckThresholdUnit;
+  } else {
+    autoCheckThresholdUnit = 'word_space';
   }
 });
 
@@ -709,6 +756,12 @@ chrome.storage.onChanged.addListener((changes, area) => {
     }
     if (changes.autoCheckDebounce) {
       autoCheckDebounce = Number(changes.autoCheckDebounce.newValue) || 2500;
+    }
+    if (changes.autoCheckThresholdVal) {
+      autoCheckThresholdVal = Math.max(1, Number(changes.autoCheckThresholdVal.newValue) || 1);
+    }
+    if (changes.autoCheckThresholdUnit) {
+      autoCheckThresholdUnit = changes.autoCheckThresholdUnit.newValue || 'word_space';
     }
   }
 });
@@ -833,8 +886,34 @@ function setFieldText(el, newText) {
   return false;
 }
 
+/**
+ * Checks if the extension context is still active.
+ * When an extension is reloaded/updated, existing tabs become orphaned and their context is invalidated.
+ */
+function isExtensionValid() {
+  try {
+    return Boolean(typeof chrome !== 'undefined' && chrome?.runtime && chrome.runtime.id);
+  } catch (_) {
+    return false;
+  }
+}
+
+/**
+ * Safely resolves an extension resource URL without throwing if the context was invalidated.
+ */
+function getSafeExtensionUrl(path) {
+  try {
+    if (isExtensionValid() && typeof chrome.runtime.getURL === 'function') {
+      return chrome.runtime.getURL(path);
+    }
+  } catch (_) {}
+  return '';
+}
+
 function ensureInlineBadge(targetEl) {
+  if (!isExtensionValid()) return null;
   const container = getModalContainer(targetEl || activeInputElement);
+  if (!container) return null;
   if (activeInlineBadge) {
     if (activeInlineBadge.parentElement !== container) {
       container.appendChild(activeInlineBadge);
@@ -844,9 +923,7 @@ function ensureInlineBadge(targetEl) {
   const badge = document.createElement('div');
   badge.id = 'gemini-inline-badge';
 
-  const iconUrl = (chrome.runtime && chrome.runtime.getURL) 
-    ? chrome.runtime.getURL('images/icon48.png') 
-    : '';
+  const iconUrl = getSafeExtensionUrl('images/icon48.png');
 
   badge.innerHTML = `
     <img src="${iconUrl}" class="gemini-badge-img" alt="✦" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'" />
@@ -959,11 +1036,11 @@ function syncBadgeWithElement(el) {
   // Dismiss any open popover from previous field
   removeInlinePopover();
 
-  const text = getFieldText(root).trim();
+  const rawText = getFieldText(root);
   const isMultiLine = root.tagName === 'TEXTAREA' || root.isContentEditable || root.clientHeight > 45;
 
-  // On single-line inputs, require at least 3 chars to prevent cluttering tiny search fields
-  if (!isMultiLine && text.length < 3) {
+  // On single-line inputs, require threshold to be met to prevent cluttering empty/tiny search fields
+  if (!isMultiLine && !hasMetAutoCheckThreshold(rawText, autoCheckThresholdVal, autoCheckThresholdUnit)) {
     removeInlineBadge();
     return;
   }
@@ -1091,16 +1168,20 @@ function toggleInlinePopover() {
         removeInlinePopover();
 
         // Record applied quick fix to History Log for Pro users
-        chrome.runtime.sendMessage({
-          type: 'RECORD_HISTORY_ITEM',
-          item: {
-            originalText: correction.originalText,
-            suggestions: [correction.correctedText],
-            style: 'inline-fix',
-            styleLabel: 'Quick Fix',
-            engine: correction.engine || 'gemini-cloud'
+        try {
+          if (isExtensionValid()) {
+            chrome.runtime.sendMessage({
+              type: 'RECORD_HISTORY_ITEM',
+              item: {
+                originalText: correction.originalText,
+                suggestions: [correction.correctedText],
+                style: 'inline-fix',
+                styleLabel: 'Quick Fix',
+                engine: correction.engine || 'gemini-cloud'
+              }
+            });
           }
-        });
+        } catch (_) {}
       }
     });
   }
@@ -1123,10 +1204,11 @@ function scheduleInlineCheck(el) {
     state.debounceTimer = null;
   }
 
-  const text = getFieldText(root).trim();
+  const rawText = getFieldText(root);
+  const text = rawText.trim();
   const isMultiLine = root.tagName === 'TEXTAREA' || root.isContentEditable || root.clientHeight > 45;
 
-  if (text.length < 8) {
+  if (!hasMetAutoCheckThreshold(rawText, autoCheckThresholdVal, autoCheckThresholdUnit)) {
     state.correction = null;
     state.status = 'idle';
     state.lastCheckedText = '';
@@ -1172,8 +1254,10 @@ function scheduleInlineCheck(el) {
   // Wait debounce delay after user finishes typing
   state.debounceTimer = setTimeout(async () => {
     state.debounceTimer = null;
-    const currentText = getFieldText(root).trim();
-    if (currentText.length < 8) return;
+    const currentRaw = getFieldText(root);
+    const currentText = currentRaw.trim();
+    if (!hasMetAutoCheckThreshold(currentRaw, autoCheckThresholdVal, autoCheckThresholdUnit)) return;
+    if (currentText.length < 2) return;
     if (state.requestId !== currentReqId) return;
 
     state.status = 'checking';
@@ -1267,7 +1351,7 @@ document.addEventListener('focusout', (e) => {
 }, true);
 
 const handleTypingEvent = (e) => {
-  if (!isAutoCheckEnabled) return;
+  if (!isAutoCheckEnabled || !isExtensionValid()) return;
   const root = getRootEditableElement(e.target);
   if (root) {
     if (activeInputElement !== root) {
@@ -1282,7 +1366,7 @@ document.addEventListener('input', handleTypingEvent, true);
 document.addEventListener('keyup', handleTypingEvent, true);
 
 document.addEventListener('click', (e) => {
-  if (!isAutoCheckEnabled) return;
+  if (!isAutoCheckEnabled || !isExtensionValid()) return;
 
   if (activeInlinePopover && !e.target.closest('#gemini-inline-popover') && !e.target.closest('#gemini-inline-badge')) {
     removeInlinePopover();
@@ -1300,7 +1384,7 @@ document.addEventListener('click', (e) => {
 }, true);
 
 document.addEventListener('selectionchange', () => {
-  if (!isAutoCheckEnabled) return;
+  if (!isAutoCheckEnabled || !isExtensionValid()) return;
   const root = getRootEditableElement(document.activeElement);
   if (root) {
     if (activeInputElement !== root) {

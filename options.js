@@ -22,6 +22,14 @@ const apiKeyOptionalHint = document.getElementById('api-key-optional-hint');
 const var1Checkbox = document.getElementById('var-1-checkbox');
 const var2Checkbox = document.getElementById('var-2-checkbox');
 
+// Auto-Check Trigger Threshold elements (Pro feature)
+const thresholdValInput = document.getElementById('threshold-val-input');
+const thresholdUnitSelect = document.getElementById('threshold-unit-select');
+const thresholdProLock = document.getElementById('threshold-pro-lock');
+const thresholdProBadge = document.getElementById('threshold-pro-badge');
+const thresholdInputsContainer = document.getElementById('threshold-inputs-container');
+const switchToProFromThresholdBtn = document.getElementById('switch-to-pro-from-threshold-btn');
+
 // Toggle API key visibility (password vs text)
 if (toggleKeyVisibilityBtn && apiKeyInput) {
   toggleKeyVisibilityBtn.addEventListener('click', () => {
@@ -184,6 +192,14 @@ function loadOptions() {
       var2Checkbox.checked = isPro ? (result.enableVariation2 !== false) : true;
       var2Checkbox.disabled = !isPro;
     }
+    if (thresholdValInput) {
+      thresholdValInput.value = isPro ? (result.autoCheckThresholdVal || 1) : 1;
+      thresholdValInput.disabled = !isPro;
+    }
+    if (thresholdUnitSelect) {
+      thresholdUnitSelect.value = isPro ? (result.autoCheckThresholdUnit || 'word_space') : 'word_space';
+      thresholdUnitSelect.disabled = !isPro;
+    }
     const useChromeAI = !isFirefox && result.useChromeBuiltInAI === true;
     if (useChromeAiToggle) {
       useChromeAiToggle.checked = useChromeAI;
@@ -243,6 +259,8 @@ function saveOptions() {
   const useChromeBuiltInAI = useChromeAiToggle ? useChromeAiToggle.checked : false;
   const enableVariation1 = (!var1Checkbox || var1Checkbox.disabled) ? true : var1Checkbox.checked;
   const enableVariation2 = (!var2Checkbox || var2Checkbox.disabled) ? true : var2Checkbox.checked;
+  const thresholdVal = (!thresholdValInput || thresholdValInput.disabled) ? 1 : Math.max(1, Number(thresholdValInput.value) || 1);
+  const thresholdUnit = (!thresholdUnitSelect || thresholdUnitSelect.disabled) ? 'word_space' : thresholdUnitSelect.value;
 
   // If user has not enabled Chrome Built-in AI, an API key is required
   if (!useChromeBuiltInAI && !apiKey) {
@@ -258,7 +276,9 @@ function saveOptions() {
     maxOutputTokens: maxOutputTokens,
     useChromeBuiltInAI: useChromeBuiltInAI,
     enableVariation1: enableVariation1,
-    enableVariation2: enableVariation2
+    enableVariation2: enableVariation2,
+    autoCheckThresholdVal: thresholdVal,
+    autoCheckThresholdUnit: thresholdUnit
   }, () => {
     const msg = useChromeBuiltInAI
       ? 'Settings saved! Chrome Built-in AI is active for free grammar checking.'
@@ -793,6 +813,39 @@ function loadProSettings() {
       }
     }
 
+    // Toggle Threshold Pro Lock vs Interactive state
+    if (thresholdProBadge) {
+      if (isPro) {
+        thresholdProBadge.textContent = 'Pro Active ✓';
+        thresholdProBadge.style.backgroundColor = '#dcfce7';
+        thresholdProBadge.style.color = '#15803d';
+      } else {
+        thresholdProBadge.textContent = 'Pro Feature';
+        thresholdProBadge.style.backgroundColor = '#eff6ff';
+        thresholdProBadge.style.color = '#1d4ed8';
+      }
+    }
+
+    if (thresholdProLock) {
+      thresholdProLock.style.display = isPro ? 'none' : 'block';
+    }
+
+    if (thresholdValInput && thresholdUnitSelect) {
+      if (isPro) {
+        thresholdValInput.disabled = false;
+        thresholdUnitSelect.disabled = false;
+        if (result.autoCheckThresholdVal) thresholdValInput.value = result.autoCheckThresholdVal;
+        if (result.autoCheckThresholdUnit) thresholdUnitSelect.value = result.autoCheckThresholdUnit;
+        if (thresholdInputsContainer) thresholdInputsContainer.style.opacity = '1';
+      } else {
+        thresholdValInput.disabled = true;
+        thresholdUnitSelect.disabled = true;
+        thresholdValInput.value = '1';
+        thresholdUnitSelect.value = 'word_space';
+        if (thresholdInputsContainer) thresholdInputsContainer.style.opacity = '0.75';
+      }
+    }
+
     if (isPro) {
       if (proBadge) {
         proBadge.textContent = `${result.fs_plan_name || 'Pro'} Active ✓`;
@@ -1200,6 +1253,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const switchToProFromVarBtn = document.getElementById('switch-to-pro-from-var-btn');
   if (switchToProFromVarBtn) {
     switchToProFromVarBtn.addEventListener('click', () => {
+      const proTabBtn = document.querySelector('.tab-btn[data-tab="pro"]');
+      if (proTabBtn) proTabBtn.click();
+    });
+  }
+
+  const switchToProFromThresholdBtn = document.getElementById('switch-to-pro-from-threshold-btn');
+  if (switchToProFromThresholdBtn) {
+    switchToProFromThresholdBtn.addEventListener('click', () => {
       const proTabBtn = document.querySelector('.tab-btn[data-tab="pro"]');
       if (proTabBtn) proTabBtn.click();
     });
