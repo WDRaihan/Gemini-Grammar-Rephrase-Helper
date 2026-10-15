@@ -314,151 +314,68 @@ async function deactivateFreemiusLicense() {
   return { success: true };
 }
 
-function buildPromptForStyle(text, style = 'default', customPrompt = '', storedPresets = []) {
+function buildPromptForStyle(text, style = 'default', customPrompt = '', storedPresets = [], numVariations = 2) {
+  let instruction = "Correct all grammar, spelling, and punctuation mistakes without changing the style.";
+
   // 1. Check if style matches any preset (built-in or custom) in storedPresets
   if (Array.isArray(storedPresets) && storedPresets.length > 0) {
     const matchedPreset = storedPresets.find(p => p.id === style);
     if (matchedPreset && matchedPreset.prompt) {
-      return `You are an expert AI writing assistant. Transform the following text strictly according to this writing instruction:
-"${matchedPreset.prompt.trim()}"
-
-Provide:
-1. One primary version fulfilling this instruction.
-2. Two alternative variations that also fulfill the instruction in slightly different ways.
-
-Return a valid JSON object matching this exact schema:
-{
-  "grammar_fix": "primary version fulfilling instruction",
-  "rephrases": [
-    "first alternative variation",
-    "second alternative variation"
-  ]
-}
-
-Original text:
-${JSON.stringify(text)}`;
+      instruction = matchedPreset.prompt.trim();
     }
   }
 
   // 2. Built-in styles fallback if storedPresets did not match
-  switch (style) {
-    case 'formal':
-      return `You are an executive communication assistant. Rewrite the following text in an executive, formal, and polished professional tone suitable for high-level business correspondence. Fix all grammar and elevate vocabulary.
-Provide:
-1. One direct formal version that preserves original phrasing but elevates tone and ensures correctness.
-2. Two distinct formal variations.
-
-Return a valid JSON object matching this exact schema:
-{
-  "grammar_fix": "direct formal version",
-  "rephrases": [
-    "first formal alternative",
-    "second formal alternative"
-  ]
-}
-
-Original text:
-${JSON.stringify(text)}`;
-
-    case 'simplify':
-      return `You are a plain-language writing assistant. Rewrite the following text so that an elementary school student (5th grader) can effortlessly understand it. Use simple, direct words, short sentences, and avoid jargon while preserving the core meaning.
-Provide:
-1. One direct simple version.
-2. Two alternative simple variations.
-
-Return a valid JSON object matching this exact schema:
-{
-  "grammar_fix": "direct simplified 5th grader version",
-  "rephrases": [
-    "first alternative simplified version",
-    "second alternative simplified version"
-  ]
-}
-
-Original text:
-${JSON.stringify(text)}`;
-
-    case 'bullets':
-      return `You are a concise information architect. Convert the key ideas and points from the following text into clear, readable, and structured bullet points (use • symbol).
-Provide:
-1. One structured bullet-point version.
-2. Two alternative bullet-point variations (one concise, one detailed).
-
-Return a valid JSON object matching this exact schema:
-{
-  "grammar_fix": "bullet point summary version",
-  "rephrases": [
-    "concise bullet points version",
-    "actionable bullet points version"
-  ]
-}
-
-Original text:
-${JSON.stringify(text)}`;
-
-    case 'slack':
-      return `You are a modern workplace communication assistant. Rewrite the following text as a casual, warm, and natural workplace chat message (ideal for Slack, Teams, or Discord). It should sound friendly, concise, and approachable while remaining polite and professional.
-Provide:
-1. One natural casual chat version.
-2. Two alternative casual variations.
-
-Return a valid JSON object matching this exact schema:
-{
-  "grammar_fix": "casual workplace chat version",
-  "rephrases": [
-    "first casual chat variation",
-    "second casual chat variation"
-  ]
-}
-
-Original text:
-${JSON.stringify(text)}`;
-
-    case 'custom':
-      const instruction = customPrompt.trim() || "Improve clarity and style";
-      return `You are an expert AI writing assistant. Transform the following text strictly according to this custom instruction:
-"${instruction}"
-
-Provide:
-1. Primary version fulfilling the custom instruction.
-2. Two creative variations that also fulfill the instruction in slightly different ways.
-
-Return a valid JSON object matching this exact schema:
-{
-  "grammar_fix": "primary version meeting instruction",
-  "rephrases": [
-    "first variation meeting instruction",
-    "second variation meeting instruction"
-  ]
-}
-
-Original text:
-${JSON.stringify(text)}`;
-
-    default:
-      return `You are a writing assistant. For the following text, provide:
-1. One version that ONLY corrects grammar, spelling, and punctuation mistakes without changing the style.
-2. Two separate versions rephrased for better clarity, tone, and flow.
-
-Return a valid JSON object matching this exact schema:
-{
-  "grammar_fix": "text with only grammar and spelling corrected",
-  "rephrases": [
-    "first rephrased version",
-    "second rephrased version"
-  ]
-}
-
-Original text:
-${JSON.stringify(text)}`;
+  if (instruction === "Correct all grammar, spelling, and punctuation mistakes without changing the style.") {
+    switch (style) {
+      case 'formal':
+        instruction = "Rewrite the following text in an executive, formal, and polished professional tone suitable for high-level business correspondence. Fix all grammar and elevate vocabulary.";
+        break;
+      case 'simplify':
+        instruction = "Rewrite the following text so that an elementary school student (5th grader) can effortlessly understand it. Use simple, direct words, short sentences, and avoid jargon while preserving the core meaning.";
+        break;
+      case 'bullets':
+        instruction = "Convert the key ideas and points from the following text into clear, readable, and structured bullet points (use • symbol).";
+        break;
+      case 'slack':
+        instruction = "Rewrite the following text as a casual, warm, and natural workplace chat message (ideal for Slack, Teams, or Discord). It should sound friendly, concise, and approachable while remaining polite and professional.";
+        break;
+      case 'custom':
+        instruction = customPrompt.trim() || "Improve clarity and style";
+        break;
+    }
   }
+
+  let provideText = "Provide:\n1. One primary version fulfilling this instruction.";
+  let schemaText = '"grammar_fix": "primary version"';
+
+  if (numVariations === 1) {
+    provideText += "\n2. One alternative variation that also fulfills the instruction in a slightly different way.";
+    schemaText += ',\n  "rephrases": [\n    "one alternative variation"\n  ]';
+  } else if (numVariations >= 2) {
+    provideText += "\n2. Two distinct alternative variations that also fulfill the instruction in slightly different ways.";
+    schemaText += ',\n  "rephrases": [\n    "first alternative variation",\n    "second alternative variation"\n  ]';
+  }
+
+  return `You are an expert AI writing assistant.
+Task: ${instruction}
+
+${provideText}
+
+Return a valid JSON object matching this exact schema:
+{
+  ${schemaText}
+}
+
+Original text:
+${JSON.stringify(text)}`;
 }
 
 /**
  * Chrome Built-in AI (Prompt API / Gemini Nano) Integration
  */
 
-function buildBuiltInAIPrompt(text, style = 'default', customPrompt = '', storedPresets = []) {
+function buildBuiltInAIPrompt(text, style = 'default', customPrompt = '', storedPresets = [], numVariations = 2) {
   let instruction = "Correct all grammar, spelling, and punctuation errors. Keep the original meaning and natural tone.";
   
   if (Array.isArray(storedPresets) && storedPresets.length > 0) {
@@ -488,23 +405,28 @@ function buildBuiltInAIPrompt(text, style = 'default', customPrompt = '', stored
     }
   }
 
+  let provideText = "Provide:\n1. One primary version fulfilling this instruction.";
+  let schemaText = '"grammar_fix": "primary version"';
+
+  if (numVariations === 1) {
+    provideText += "\n2. One alternative variation fulfilling the instruction in a slightly different way.";
+    schemaText += ',\n  "rephrases": [\n    "one alternative variation"\n  ]';
+  } else if (numVariations >= 2) {
+    provideText += "\n2. Two alternative variations fulfilling the instruction in slightly different ways.";
+    schemaText += ',\n  "rephrases": [\n    "first variation",\n    "second variation"\n  ]';
+  }
+
   return `You are an expert AI grammar and writing assistant.
 Task: ${instruction}
 
 Original text:
 ${JSON.stringify(text)}
 
-Provide:
-1. One primary version fulfilling this instruction.
-2. Two alternative variations fulfilling the instruction in slightly different ways.
+${provideText}
 
 Respond strictly in valid JSON matching this schema:
 {
-  "grammar_fix": "primary version",
-  "rephrases": [
-    "first variation",
-    "second variation"
-  ]
+  ${schemaText}
 }`;
 }
 
@@ -650,7 +572,7 @@ async function executePromptWithBuiltInAI(promptText, tab) {
   throw new Error("Chrome Built-in AI is not available in this browser. Please enable Prompt API flags in chrome://flags or use your Gemini API key.");
 }
 
-function parseBuiltInAISuggestions(rawOutput, originalText) {
+function parseBuiltInAISuggestions(rawOutput, originalText, numVariations = 2) {
   let cleaned = (rawOutput || '').trim();
   if (cleaned.startsWith("```")) {
     cleaned = cleaned.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
@@ -673,13 +595,15 @@ function parseBuiltInAISuggestions(rawOutput, originalText) {
     const fix = resultJson.grammar_fix || resultJson.grammarFix || resultJson.correction || resultJson.corrected_text;
     if (fix && typeof fix === 'string') suggestions.push(fix.trim());
 
-    const rephrases = resultJson.rephrases || resultJson.alternatives || [];
-    if (Array.isArray(rephrases)) {
-      rephrases.forEach(r => {
-        if (typeof r === 'string' && r.trim()) suggestions.push(r.trim());
-      });
-    } else if (typeof rephrases === 'string' && rephrases.trim()) {
-      suggestions.push(rephrases.trim());
+    if (numVariations > 0) {
+      const rephrases = resultJson.rephrases || resultJson.alternatives || [];
+      if (Array.isArray(rephrases)) {
+        rephrases.slice(0, numVariations).forEach(r => {
+          if (typeof r === 'string' && r.trim()) suggestions.push(r.trim());
+        });
+      } else if (typeof rephrases === 'string' && rephrases.trim()) {
+        suggestions.push(rephrases.trim());
+      }
     }
   }
 
@@ -689,12 +613,14 @@ function parseBuiltInAISuggestions(rawOutput, originalText) {
     if (fixMatch && fixMatch[1]) {
       suggestions.push(fixMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').trim());
     }
-    const rephrasesBlockMatch = cleaned.match(/"rephrases"\s*:\s*\[([\s\S]*?)\]/i);
-    if (rephrasesBlockMatch && rephrasesBlockMatch[1]) {
-      const itemMatches = [...rephrasesBlockMatch[1].matchAll(/"((?:[^"\\]|\\.)*)"/g)];
-      itemMatches.forEach(m => {
-        if (m[1]) suggestions.push(m[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').trim());
-      });
+    if (numVariations > 0) {
+      const rephrasesBlockMatch = cleaned.match(/"rephrases"\s*:\s*\[([\s\S]*?)\]/i);
+      if (rephrasesBlockMatch && rephrasesBlockMatch[1]) {
+        const itemMatches = [...rephrasesBlockMatch[1].matchAll(/"((?:[^"\\]|\\.)*)"/g)];
+        itemMatches.slice(0, numVariations).forEach(m => {
+          if (m[1]) suggestions.push(m[1].replace(/\\"/g, '"').replace(/\\n/g, '\n').trim());
+        });
+      }
     }
   }
 
@@ -809,10 +735,30 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
   // 1. Fetch settings in parallel
   const [proInfo, syncData] = await Promise.all([
     getProStatus(),
-    chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'maxOutputTokens', 'stylePresets', 'useChromeBuiltInAI'])
+    chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'maxOutputTokens', 'stylePresets', 'useChromeBuiltInAI', 'enableVariation1', 'enableVariation2'])
   ]);
   const isPro = proInfo.isPro;
   const useChromeBuiltInAI = syncData.useChromeBuiltInAI === true;
+
+  // Calculate number of alternative variations to generate (0, 1, or 2)
+  // Gated for Pro users only: Free users always receive all variations.
+  let enableVar1 = true;
+  let enableVar2 = true;
+  let numVariations = 2;
+
+  if (isPro) {
+    enableVar1 = syncData.enableVariation1 !== false;
+    enableVar2 = syncData.enableVariation2 !== false;
+    if (!enableVar1 && !enableVar2) {
+      numVariations = 0;
+    } else if (!enableVar1 || !enableVar2) {
+      numVariations = 1;
+    }
+  }
+
+  const variationLabels = ['DEFAULT'];
+  if (enableVar1) variationLabels.push('Variation 1');
+  if (enableVar2) variationLabels.push('Variation 2');
 
   // Gate pro styles
   if (style !== 'default' && !isPro) {
@@ -855,9 +801,9 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
         isPro
       });
 
-      const promptText = buildBuiltInAIPrompt(text, style, customPrompt, syncData.stylePresets || []);
+      const promptText = buildBuiltInAIPrompt(text, style, customPrompt, syncData.stylePresets || [], numVariations);
       const rawOutput = await executePromptWithBuiltInAI(promptText, tab);
-      const suggestions = parseBuiltInAISuggestions(rawOutput, text);
+      const suggestions = parseBuiltInAISuggestions(rawOutput, text, numVariations);
 
       if (suggestions.length === 0) {
         throw new Error("Could not parse suggestions from Chrome Built-in AI.");
@@ -876,6 +822,7 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
       await chrome.tabs.sendMessage(tab.id, {
         type: 'SHOW_RESULT',
         data: suggestions,
+        labels: variationLabels,
         isError: false,
         originalText: text,
         activeStyle: style,
@@ -943,27 +890,34 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
 
     // 4. Make the API call to Gemini with timeout protection
     const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
-    const promptText = buildPromptForStyle(text, style, customPrompt, syncData.stylePresets || []);
+    const promptText = buildPromptForStyle(text, style, customPrompt, syncData.stylePresets || [], numVariations);
     const rawTokens = typeof syncData.maxOutputTokens !== 'undefined' ? Number(syncData.maxOutputTokens) : 0;
     const userMaxTokens = isNaN(rawTokens) ? 0 : rawTokens;
+
+    const properties = {
+      grammar_fix: {
+        type: "STRING",
+        description: "Primary corrected or rephrased version according to requested style."
+      }
+    };
+    const required = ["grammar_fix"];
+
+    if (numVariations > 0) {
+      properties.rephrases = {
+        type: "ARRAY",
+        items: { type: "STRING" },
+        description: `${numVariations} alternative rephrased variation${numVariations > 1 ? 's' : ''}.`
+      };
+      required.push("rephrases");
+    }
 
     const generationConfig = {
       temperature: 0.2,
       response_mime_type: "application/json",
       response_schema: {
         type: "OBJECT",
-        properties: {
-          grammar_fix: {
-            type: "STRING",
-            description: "Primary corrected or rephrased version according to requested style."
-          },
-          rephrases: {
-            type: "ARRAY",
-            items: { type: "STRING" },
-            description: "Two alternative rephrased variations."
-          }
-        },
-        required: ["grammar_fix", "rephrases"]
+        properties,
+        required
       }
     };
 
@@ -1052,11 +1006,13 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
       const grammarFix = resultJson.grammar_fix || resultJson.grammarFix || resultJson.correction;
       if (grammarFix) suggestions.push(grammarFix);
 
-      const rephrases = resultJson.rephrases || resultJson.alternatives || [];
-      if (Array.isArray(rephrases)) {
-        suggestions.push(...rephrases);
-      } else if (typeof rephrases === 'string') {
-        suggestions.push(rephrases);
+      if (numVariations > 0) {
+        const rephrases = resultJson.rephrases || resultJson.alternatives || [];
+        if (Array.isArray(rephrases)) {
+          suggestions.push(...rephrases.slice(0, numVariations));
+        } else if (typeof rephrases === 'string') {
+          suggestions.push(rephrases);
+        }
       }
     } else {
       // Partial salvage attempt: if JSON was cut off midway by MAX_TOKENS, extract what was completed!
@@ -1065,12 +1021,14 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
         suggestions.push(grammarMatch[1].replace(/\\"/g, '"').replace(/\\n/g, '\n'));
       }
 
-      const rephrasesBlockMatch = rawText.match(/"rephrases"\s*:\s*\[([\s\S]*)/i);
-      if (rephrasesBlockMatch && rephrasesBlockMatch[1]) {
-        const itemMatches = [...rephrasesBlockMatch[1].matchAll(/"((?:[^"\\]|\\.)*)"/g)];
-        itemMatches.forEach(m => {
-          if (m[1]) suggestions.push(m[1].replace(/\\"/g, '"').replace(/\\n/g, '\n'));
-        });
+      if (numVariations > 0) {
+        const rephrasesBlockMatch = rawText.match(/"rephrases"\s*:\s*\[([\s\S]*)/i);
+        if (rephrasesBlockMatch && rephrasesBlockMatch[1]) {
+          const itemMatches = [...rephrasesBlockMatch[1].matchAll(/"((?:[^"\\]|\\.)*)"/g)];
+          itemMatches.slice(0, numVariations).forEach(m => {
+            if (m[1]) suggestions.push(m[1].replace(/\\"/g, '"').replace(/\\n/g, '\n'));
+          });
+        }
       }
     }
 
@@ -1095,6 +1053,7 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
     await chrome.tabs.sendMessage(tab.id, {
       type: 'SHOW_RESULT',
       data: suggestions,
+      labels: variationLabels,
       isError: false,
       originalText: text,
       activeStyle: style,

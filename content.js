@@ -1,7 +1,12 @@
 let geminiLoadingTimer = null;
-let currentModalText = "";
+let originalPromptText = ""; // Immutable raw input from initial selection
+let currentModalText = "";   // Mutable active input for subsequent styles/prompts
 let currentModalStyle = "default";
 let isProUser = false;
+let isInternalStyleChange = false;
+let initialDefaultSuggestions = null;
+let initialEngine = "";
+let currentVariationLabels = [];
 
 const FREEMIUS_PRODUCT_ID = "41271";
 const FREEMIUS_PRICING_ID = "98283";
@@ -83,24 +88,47 @@ if (window.__geminiCurrentRuntime !== chrome.runtime) {
   chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     if (request.type === 'SHOW_LOADING') {
       clearGeminiLoadingTimer();
-      currentModalText = request.originalText || currentModalText;
       currentModalStyle = request.activeStyle || currentModalStyle || 'default';
       if (typeof request.isPro === 'boolean') isProUser = request.isPro;
 
-      showModal('<h3>Loading...</h3><div class="spinner"></div><p>Asking Gemini for suggestions...</p>');
+      const existingModal = document.getElementById('gemini-rephrase-modal');
+      if (!existingModal || !isInternalStyleChange) {
+        // Fresh invocation from context menu / shortcut
+        originalPromptText = request.originalText || '';
+        currentModalText = request.originalText || '';
+        initialDefaultSuggestions = null;
+        initialEngine = '';
+        showModal('<h3>Loading...</h3><div class="spinner"></div><p>Asking Gemini for suggestions...</p>');
+      } else {
+        // Preset or prompt switch inside an already open modal
+        const modalBody = document.getElementById('gemini-modal-body');
+        if (modalBody) {
+          const presetLabel = activeStylePresets.find(p => p.id === currentModalStyle)?.label || currentModalStyle;
+          modalBody.innerHTML = `
+            <div class="spinner"></div>
+            <p style="color: #475569; font-size: 14px; margin-top: 10px;">
+              Applying style: <strong>${escapeHTML(presetLabel)}</strong>...
+            </p>
+          `;
+        }
+      }
 
       // Safety watchdog: ensure loading spinner never hangs indefinitely
       geminiLoadingTimer = setTimeout(() => {
+        isInternalStyleChange = false;
         updateModalContent("Request timed out. Google Gemini took too long to respond. Please check your connection or try again.", true);
       }, 28000);
 
     } else if (request.type === 'SHOW_RESULT') {
       clearGeminiLoadingTimer();
-      currentModalText = request.originalText || currentModalText;
+      isInternalStyleChange = false;
+      if (!originalPromptText && request.originalText) {
+        originalPromptText = request.originalText;
+      }
       currentModalStyle = request.activeStyle || currentModalStyle || 'default';
       if (typeof request.isPro === 'boolean') isProUser = request.isPro;
 
-      updateModalContent(request.data, request.isError, currentModalStyle, isProUser, request.engine);
+      updateModalContent(request.data, request.isError, currentModalStyle, isProUser, request.engine, request.labels);
     }
   });
 }
@@ -163,6 +191,19 @@ function showModal(contentHTML) {
   const modalContent = modal.querySelector('#gemini-modal-content');
   if (modalContent) {
     modalContent.style.setProperty('z-index', '2147483647', 'important');
+
+    // Centralized event delegation for copy buttons
+    modalContent.addEventListener('click', async (event) => {
+      const copyBtn = event.target.closest('.copy-suggestion-btn');
+      if (copyBtn) {
+        event.stopPropagation();
+        const textElement = copyBtn.closest('.suggestion-item')?.querySelector('.suggestion-text');
+        const textToCopy = textElement ? textElement.textContent : '';
+        if (textToCopy) {
+          await copyToClipboard(textToCopy, copyBtn);
+        }
+      }
+    });
   }
   const modalOverlay = modal.querySelector('#gemini-modal-overlay');
   if (modalOverlay) {
@@ -263,6 +304,24 @@ function handlePresetClick(preset) {
     return;
   }
 
+  // If user clicks 'default', it acts as the reset button to restore first suggestions
+  if (preset.id === 'default') {
+    currentModalStyle = 'default';
+    renderPresetsBar();
+    const customContainer = document.getElementById('gemini-custom-prompt-container');
+    if (customContainer) customContainer.classList.remove('visible');
+
+    if (initialDefaultSuggestions && initialDefaultSuggestions.length > 0) {
+      currentModalText = initialDefaultSuggestions[0];
+      updateModalContent(initialDefaultSuggestions, false, 'default', isProUser, initialEngine, currentVariationLabels);
+      return;
+    } else {
+      currentModalText = originalPromptText;
+      triggerStyleRephrase('default');
+      return;
+    }
+  }
+
   currentModalStyle = preset.id;
   renderPresetsBar();
 
@@ -287,6 +346,7 @@ function handlePresetClick(preset) {
 function triggerStyleRephrase(styleId, customPrompt = '') {
   if (!currentModalText) return;
 
+  isInternalStyleChange = true;
   clearGeminiLoadingTimer();
   const modalBody = document.getElementById('gemini-modal-body');
   if (modalBody) {
@@ -300,6 +360,7 @@ function triggerStyleRephrase(styleId, customPrompt = '') {
   }
 
   geminiLoadingTimer = setTimeout(() => {
+    isInternalStyleChange = false;
     updateModalContent("Request timed out. Google Gemini took too long to respond. Please try again.", true);
   }, 28000);
 
@@ -310,6 +371,7 @@ function triggerStyleRephrase(styleId, customPrompt = '') {
     customPrompt: customPrompt
   }, (response) => {
     if (chrome.runtime.lastError) {
+      isInternalStyleChange = false;
       clearGeminiLoadingTimer();
       updateModalContent("Could not contact background service. Please reload the page and try again.", true);
     }
@@ -418,12 +480,22 @@ function showProUpgradeBanner() {
  * @param {string} activeStyle Active style preset ID.
  * @param {boolean} isPro Indicates whether user has Pro license.
  */
-function updateModalContent(data, isError, activeStyle = 'default', isPro = false, engine = '') {
+/**
+ * Updates the content of the modal with the API response.
+ * @param {string|string[]} data The suggestions or error message.
+ * @param {boolean} isError Indicates if the result is an error message.
+ * @param {string} activeStyle Active style preset ID.
+ * @param {boolean} isPro Indicates whether user has Pro license.
+ */
+function updateModalContent(data, isError, activeStyle = 'default', isPro = false, engine = '', labels = []) {
   const modalBody = document.getElementById('gemini-modal-body');
   if (!modalBody) return;
 
   currentModalStyle = activeStyle;
   isProUser = isPro;
+  if (Array.isArray(labels) && labels.length > 0) {
+    currentVariationLabels = labels;
+  }
 
   const engineBadge = document.getElementById('gemini-engine-badge');
   if (engineBadge) {
@@ -453,7 +525,7 @@ function updateModalContent(data, isError, activeStyle = 'default', isPro = fals
     if (customContainer) customContainer.classList.remove('visible');
     contentHTML = `<p class="error-text">${escapeHTML(data)}</p>`;
   } else {
-    // Only display style presets when Gemini successfully returns grammar fix results
+    // Only display style presets when Gemini successfully returns results
     renderPresetsBar();
     if (presetsContainer) presetsContainer.classList.add('visible');
     if (customContainer) {
@@ -464,58 +536,60 @@ function updateModalContent(data, isError, activeStyle = 'default', isPro = fals
       }
     }
 
-    if (Array.isArray(data)) {
+    if (Array.isArray(data) && data.length > 0) {
+      // Cache initial default suggestions for 1-click reset on 'default' preset
+      if (activeStyle === 'default' && !initialDefaultSuggestions) {
+        initialDefaultSuggestions = data;
+        initialEngine = engine;
+      }
+
+      // Active source automatically builds upon the first suggestion of the current result
+      currentModalText = data[0];
+
       contentHTML = '<div class="suggestion-list">';
     
-    // Choose badge names based on current style
-    const getBadgeLabel = (index) => {
-      if (index === 0) {
-        switch (activeStyle) {
-          case 'formal': return 'Formal Version';
-          case 'simplify': return '5th Grader Simple';
-          case 'bullets': return 'Bullet Points';
-          case 'slack': return 'Casual Slack';
-          case 'custom': return 'Custom Style';
-          default: {
-            const customPreset = activeStylePresets.find(p => p.id === activeStyle);
-            return customPreset ? escapeHTML(customPreset.label) : 'Grammar Fix';
+      // Choose badge names based on current style
+      const getBadgeLabel = (index) => {
+        if (index === 0) {
+          switch (activeStyle) {
+            case 'formal': return 'Formal Version';
+            case 'simplify': return '5th Grader Simple';
+            case 'bullets': return 'Bullet Points';
+            case 'slack': return 'Casual Slack';
+            case 'custom': return 'Custom Style';
+            default: {
+              const customPreset = activeStylePresets.find(p => p.id === activeStyle);
+              return customPreset ? escapeHTML(customPreset.label) : (activeStyle === 'default' ? '✦ DEFAULT' : 'Grammar Fix');
+            }
           }
         }
-      }
-      return `Variation ${index}`;
-    };
+        if (Array.isArray(currentVariationLabels) && currentVariationLabels[index]) {
+          return currentVariationLabels[index];
+        }
+        return `Variation ${index}`;
+      };
 
-    data.forEach((suggestion, index) => {
-      const sanitized = escapeHTML(suggestion);
-      const label = getBadgeLabel(index);
-      contentHTML += `
-        <div class="suggestion-item">
-          <div class="suggestion-content">
-            <span class="suggestion-badge">${label}</span>
-            <p class="suggestion-text">${sanitized}</p>
+      data.forEach((suggestion, index) => {
+        const sanitized = escapeHTML(suggestion);
+        const label = getBadgeLabel(index);
+        contentHTML += `
+          <div class="suggestion-item">
+            <div class="suggestion-content">
+              <span class="suggestion-badge">${label}</span>
+              <p class="suggestion-text">${sanitized}</p>
+            </div>
+            <button class="copy-suggestion-btn" type="button">Copy</button>
           </div>
-          <button class="copy-suggestion-btn">Copy</button>
-        </div>
-      `;
-    });
-    contentHTML += '</div>';
-  } else {
-    contentHTML = `<p class="suggestion-text">${escapeHTML(data)}</p>`;
-  }
-}
-
-modalBody.innerHTML = contentHTML;
-
-  // Event delegation for copy buttons
-  modalBody.addEventListener('click', async (event) => {
-    if (event.target.classList.contains('copy-suggestion-btn')) {
-      const textElement = event.target.closest('.suggestion-item')?.querySelector('.suggestion-text');
-      const textToCopy = textElement ? textElement.textContent : '';
-      if (textToCopy) {
-        await copyToClipboard(textToCopy, event.target);
-      }
+        `;
+      });
+      contentHTML += '</div>';
+    } else {
+      currentModalText = String(data);
+      contentHTML = `<p class="suggestion-text">${escapeHTML(data)}</p>`;
     }
-  });
+  }
+
+  modalBody.innerHTML = contentHTML;
 }
 
 /**
@@ -527,6 +601,12 @@ function closeModal() {
   if (modal) {
     modal.remove();
   }
+  originalPromptText = "";
+  currentModalText = "";
+  initialDefaultSuggestions = null;
+  initialEngine = "";
+  currentVariationLabels = [];
+  isInternalStyleChange = false;
   window.removeEventListener('keydown', handleKeyDown);
 }
 

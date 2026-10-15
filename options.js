@@ -18,6 +18,10 @@ const checkChromeAiBtn = document.getElementById('check-chrome-ai-btn');
 const chromeAiStatusMsg = document.getElementById('chrome-ai-status-msg');
 const apiKeyOptionalHint = document.getElementById('api-key-optional-hint');
 
+// Suggestion Variations elements (100% independent)
+const var1Checkbox = document.getElementById('var-1-checkbox');
+const var2Checkbox = document.getElementById('var-2-checkbox');
+
 // Toggle API key visibility (password vs text)
 if (toggleKeyVisibilityBtn && apiKeyInput) {
   toggleKeyVisibilityBtn.addEventListener('click', () => {
@@ -148,7 +152,8 @@ if (checkChromeAiBtn) {
 
 // Load saved settings
 function loadOptions() {
-  chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'autoCheckEnabled', 'maxOutputTokens', 'autoCheckDebounce', 'useChromeBuiltInAI'], (result) => {
+  chrome.storage.sync.get(['geminiApiKey', 'geminiModel', 'autoCheckEnabled', 'maxOutputTokens', 'autoCheckDebounce', 'useChromeBuiltInAI', 'enableVariation1', 'enableVariation2', 'isPro'], (result) => {
+    const isPro = result.isPro === true;
     if (result.geminiApiKey) {
       apiKeyInput.value = result.geminiApiKey;
     }
@@ -170,6 +175,14 @@ function loadOptions() {
       } else {
         maxTokensSelect.value = "0"; // Default: No Limit
       }
+    }
+    if (var1Checkbox) {
+      var1Checkbox.checked = isPro ? (result.enableVariation1 !== false) : true;
+      var1Checkbox.disabled = !isPro;
+    }
+    if (var2Checkbox) {
+      var2Checkbox.checked = isPro ? (result.enableVariation2 !== false) : true;
+      var2Checkbox.disabled = !isPro;
     }
     const useChromeAI = !isFirefox && result.useChromeBuiltInAI === true;
     if (useChromeAiToggle) {
@@ -228,6 +241,8 @@ function saveOptions() {
   const rawMaxTokens = maxTokensSelect ? Number(maxTokensSelect.value) : 0;
   const maxOutputTokens = isNaN(rawMaxTokens) ? 0 : rawMaxTokens;
   const useChromeBuiltInAI = useChromeAiToggle ? useChromeAiToggle.checked : false;
+  const enableVariation1 = (!var1Checkbox || var1Checkbox.disabled) ? true : var1Checkbox.checked;
+  const enableVariation2 = (!var2Checkbox || var2Checkbox.disabled) ? true : var2Checkbox.checked;
 
   // If user has not enabled Chrome Built-in AI, an API key is required
   if (!useChromeBuiltInAI && !apiKey) {
@@ -241,7 +256,9 @@ function saveOptions() {
     autoCheckEnabled: autoCheckEnabled,
     autoCheckDebounce: autoCheckDebounce,
     maxOutputTokens: maxOutputTokens,
-    useChromeBuiltInAI: useChromeBuiltInAI
+    useChromeBuiltInAI: useChromeBuiltInAI,
+    enableVariation1: enableVariation1,
+    enableVariation2: enableVariation2
   }, () => {
     const msg = useChromeBuiltInAI
       ? 'Settings saved! Chrome Built-in AI is active for free grammar checking.'
@@ -733,6 +750,48 @@ function loadProSettings() {
         historyManager.style.display = 'none';
       }
     }
+    // Toggle Variations Pro Lock vs Interactive state
+    const varProLock = document.getElementById('var-pro-lock');
+    const varProBadge = document.getElementById('var-pro-badge');
+    const varContainer = document.getElementById('var-checkboxes-container');
+    const var1Label = document.getElementById('var-1-label');
+    const var2Label = document.getElementById('var-2-label');
+
+    if (varProBadge) {
+      if (isPro) {
+        varProBadge.textContent = 'Pro Active ✓';
+        varProBadge.style.backgroundColor = '#dcfce7';
+        varProBadge.style.color = '#15803d';
+      } else {
+        varProBadge.textContent = 'Pro Feature';
+        varProBadge.style.backgroundColor = '#eff6ff';
+        varProBadge.style.color = '#1d4ed8';
+      }
+    }
+
+    if (varProLock) {
+      varProLock.style.display = isPro ? 'none' : 'block';
+    }
+
+    if (var1Checkbox && var2Checkbox) {
+      if (isPro) {
+        var1Checkbox.disabled = false;
+        var2Checkbox.disabled = false;
+        var1Checkbox.checked = result.enableVariation1 !== false;
+        var2Checkbox.checked = result.enableVariation2 !== false;
+        if (varContainer) varContainer.style.opacity = '1';
+        if (var1Label) var1Label.style.cursor = 'pointer';
+        if (var2Label) var2Label.style.cursor = 'pointer';
+      } else {
+        var1Checkbox.disabled = true;
+        var2Checkbox.disabled = true;
+        var1Checkbox.checked = true;
+        var2Checkbox.checked = true;
+        if (varContainer) varContainer.style.opacity = '0.75';
+        if (var1Label) var1Label.style.cursor = 'not-allowed';
+        if (var2Label) var2Label.style.cursor = 'not-allowed';
+      }
+    }
 
     if (isPro) {
       if (proBadge) {
@@ -1133,6 +1192,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const switchToProFromHistoryBtn = document.getElementById('switch-to-pro-from-history-btn');
   if (switchToProFromHistoryBtn) {
     switchToProFromHistoryBtn.addEventListener('click', () => {
+      const proTabBtn = document.querySelector('.tab-btn[data-tab="pro"]');
+      if (proTabBtn) proTabBtn.click();
+    });
+  }
+
+  const switchToProFromVarBtn = document.getElementById('switch-to-pro-from-var-btn');
+  if (switchToProFromVarBtn) {
+    switchToProFromVarBtn.addEventListener('click', () => {
       const proTabBtn = document.querySelector('.tab-btn[data-tab="pro"]');
       if (proTabBtn) proTabBtn.click();
     });

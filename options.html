@@ -1307,6 +1307,50 @@
                     </div>
                 </div>
 
+                <!-- Generated Variations Checkboxes (Token & Speed Saver) - Pro Feature -->
+                <div class="form-group" style="margin-top: 20px;">
+                    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;">
+                        <label style="margin-bottom: 0;">Disable Variations (Token Saver)</label>
+                        <span id="var-pro-badge" class="pro-badge" style="font-size: 11px; padding: 2px 8px; border-radius: 4px; font-weight: 600;">Pro Feature</span>
+                    </div>
+                    <div class="help-text" style="margin-top: 0; margin-bottom: 12px;">
+                        Free users automatically receive all 3 suggestions by default. Pro members can selectively disable variations to conserve API tokens and get faster response times.
+                    </div>
+
+                    <!-- Pro Gate Alert Banner (Shown when user is Free) -->
+                    <div id="var-pro-lock" style="display: none; margin-bottom: 12px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 12px 14px;">
+                        <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                            <div style="font-size: 12.5px; color: #1e40af; line-height: 1.4;">
+                                <strong style="display: block; font-size: 13px; margin-bottom: 2px;">🔒 Pro Feature: Variation Disable Control</strong>
+                                Free users receive all 3 variations on every grammar check. Upgrade to Pro to get control to turn off specific variations and save API quota.
+                            </div>
+                            <div style="display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
+                                <a href="https://checkout.freemius.com/?plugin_id=41271&pricing_id=98283" target="_blank" rel="noopener noreferrer" style="display: inline-block; padding: 6px 12px; background: linear-gradient(135deg, #2563eb, #7c3aed); color: white; border-radius: 6px; font-size: 12px; font-weight: 600; text-decoration: none; box-shadow: 0 1px 3px rgba(37,99,235,0.2);">
+                                    Upgrade to Pro ↗
+                                </a>
+                                <button type="button" id="switch-to-pro-from-var-btn" class="btn-detect" style="padding: 6px 10px; font-size: 12px;">
+                                    Enter License
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="var-checkboxes-container" style="display: flex; flex-direction: column; gap: 10px; background: #f8fafc; padding: 14px 16px; border-radius: var(--radius-sm); border: 1px solid var(--border-color); transition: opacity 0.2s;">
+                        <label style="display: flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 500; color: var(--text-main); cursor: default;">
+                            <input type="checkbox" id="var-primary-checkbox" checked disabled style="width: 16px; height: 16px; accent-color: var(--primary);">
+                            <span><strong>Primary Suggestion</strong> (Default / Style Fix) <span style="font-size: 11px; color: var(--primary); background: var(--primary-light); padding: 1px 6px; border-radius: 4px; font-weight: 600; margin-left: 6px;">Always Enabled</span></span>
+                        </label>
+                        <label id="var-1-label" style="display: flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 500; color: var(--text-main); cursor: pointer;">
+                            <input type="checkbox" id="var-1-checkbox" checked style="width: 16px; height: 16px; accent-color: var(--primary);">
+                            <span><strong>Variation 1</strong> (Generates 2nd suggestion card)</span>
+                        </label>
+                        <label id="var-2-label" style="display: flex; align-items: center; gap: 10px; font-size: 13.5px; font-weight: 500; color: var(--text-main); cursor: pointer;">
+                            <input type="checkbox" id="var-2-checkbox" checked style="width: 16px; height: 16px; accent-color: var(--primary);">
+                            <span><strong>Variation 2</strong> (Generates 3rd suggestion card)</span>
+                        </label>
+                    </div>
+                </div>
+
                 <div class="smart-pill" style="margin-top: 14px;">
                     <span>🛡️ Smart LRU Caching Active:</span> Identical text phrases are served locally from memory without burning API quota.
                 </div>
