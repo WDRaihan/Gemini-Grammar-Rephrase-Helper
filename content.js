@@ -932,7 +932,7 @@ function ensureInlineBadge(targetEl) {
   const iconUrl = getSafeExtensionUrl('images/icon48.png');
 
   badge.innerHTML = `
-    <img src="${iconUrl}" class="gemini-badge-img" alt="✦" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'" />
+    <img src="${iconUrl}" class="gemini-badge-img" alt="✦" onerror="this.style.display='none';if(this.nextElementSibling)this.nextElementSibling.style.display='inline';" />
     <span class="gemini-badge-fallback-icon" style="display:none;font-size:12px;color:#2563eb;line-height:1;">✦</span>
     <span class="gemini-badge-dot"></span>
   `;
@@ -991,17 +991,20 @@ function updateBadgePosition() {
     left = visibleRight - badgeSize - 12;
   }
 
-  activeInlineBadge.style.position = 'fixed';
-  activeInlineBadge.style.top = `${Math.max(8, top)}px`;
-  activeInlineBadge.style.left = `${Math.max(8, left)}px`;
+  if (activeInlineBadge) {
+    activeInlineBadge.style.position = 'fixed';
+    activeInlineBadge.style.top = `${Math.max(8, top)}px`;
+    activeInlineBadge.style.left = `${Math.max(8, left)}px`;
+  }
 
-  if (activeInlinePopover) {
+  if (activeInlinePopover && activeInlineBadge) {
     positionInlinePopover();
   }
 }
 
 function setBadgeState(state, tooltipText = '') {
   const badge = ensureInlineBadge();
+  if (!badge) return;
   badge.style.opacity = '1';
   badge.className = '';
   if (state && state !== 'idle') {
