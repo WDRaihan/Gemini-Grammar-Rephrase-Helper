@@ -10,7 +10,8 @@ let currentVariationLabels = [];
 
 const FREEMIUS_PRODUCT_ID = "41271";
 const FREEMIUS_PRICING_ID = "98283";
-const FREEMIUS_CHECKOUT_URL = `https://checkout.freemius.com/?plugin_id=${FREEMIUS_PRODUCT_ID}&pricing_id=${FREEMIUS_PRICING_ID}`;
+const FREEMIUS_CHECKOUT_URL = "https://ggrh.atplugins.com/pricing/";
+const FREEMIUS_PORTAL_URL = "https://ggrh.atplugins.com/portal/";
 
 const DEFAULT_PRESETS_LIST = [
   { id: 'default', label: '✦ Default', isPro: false },
@@ -300,7 +301,7 @@ function refreshPresetsBar() {
  */
 function handlePresetClick(preset) {
   if (preset.isPro && !isProUser) {
-    showProUpgradeBanner();
+    showProUpgradeBanner(preset.label);
     return;
   }
 
@@ -380,10 +381,19 @@ function triggerStyleRephrase(styleId, customPrompt = '') {
 
 /**
  * Shows the Pro Upgrade banner inside the modal body for free users.
+ * @param {string} [presetName]
  */
-function showProUpgradeBanner() {
+function showProUpgradeBanner(presetName) {
+  const cleanPresetName = presetName ? presetName.replace(/\.{2,}$/, '').trim() : '';
+
   const existingBanner = document.getElementById('gemini-pro-upgrade-banner');
   if (existingBanner) {
+    if (cleanPresetName) {
+      const descEl = existingBanner.querySelector('.gemini-pro-banner-desc');
+      if (descEl) {
+        descEl.innerHTML = `<strong>${escapeHTML(cleanPresetName)}</strong> requires an active Pro license. Upgrade your plan to unlock all style presets and custom prompts, or activate your existing license below.`;
+      }
+    }
     existingBanner.scrollIntoView({ behavior: 'smooth' });
     return;
   }
@@ -391,29 +401,25 @@ function showProUpgradeBanner() {
   const modalBody = document.getElementById('gemini-modal-body');
   if (!modalBody) return;
 
+  const descText = cleanPresetName
+    ? `<strong>${escapeHTML(cleanPresetName)}</strong> requires an active Pro license. Upgrade your plan to unlock all style presets and custom prompts, or activate your existing license below.`
+    : `Style presets and custom prompts require an active Pro license. Upgrade your plan to unlock full access, or activate your existing license below.`;
+
   const banner = document.createElement('div');
   banner.id = 'gemini-pro-upgrade-banner';
   banner.innerHTML = `
     <div class="gemini-pro-banner-header">
-      <h4 class="gemini-pro-banner-title">⭐ Unlock Style Presets with Pro</h4>
+      <h4 class="gemini-pro-banner-title">⭐ Unlock with Pro</h4>
       <button class="gemini-pro-banner-close" aria-label="Close banner">&times;</button>
     </div>
-    <p class="gemini-pro-banner-desc">
-      Unlock instant style transformations: <strong>Make Formal</strong>, <strong>5th Grader simplicity</strong>, <strong>Bullet Points</strong>, <strong>Slack chat</strong>, and <strong>Custom Prompts</strong>.
-    </p>
-    <ul class="gemini-pro-banner-features">
-      <li>✓ Custom Style Presets</li>
-      <li>✓ Unlimited Custom Prompts</li>
-      <li>✓ Executive & Formal Tone</li>
-      <li>✓ Casual Slack & Chat Mode</li>
-    </ul>
+    <p class="gemini-pro-banner-desc">${descText}</p>
     <div class="gemini-pro-banner-actions" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
       <a href="${FREEMIUS_CHECKOUT_URL}" target="_blank" rel="noopener noreferrer" class="gemini-btn-buy-pro">
         Upgrade to Pro
       </a>
       <div style="font-size: 12px; color: #475569; display: inline-flex; align-items: center; gap: 5px;">
         <span>Already purchased?</span>
-        <a href="https://customers.freemius.com/" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline; font-weight: 500;">
+        <a href="${FREEMIUS_PORTAL_URL}" target="_blank" rel="noopener noreferrer" style="color: #2563eb; text-decoration: underline; font-weight: 500;">
           Find License (Client Portal) ↗
         </a>
       </div>

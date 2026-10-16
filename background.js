@@ -257,7 +257,7 @@ async function activateFreemiusLicense(licenseKey, userProductId) {
     try {
       const errJson = await response.json();
       if (errJson.error?.code === 'license_utilized' || /quota/i.test(errJson.error?.message || '')) {
-        errDetail = "License quota reached (1 active device limit). Please release previous install at customers.freemius.com or click Deactivate before uninstalling.";
+        errDetail = "License quota reached (1 active device limit). Please release previous install at ggrh.atplugins.com/portal/ or click Deactivate before uninstalling.";
       } else if (errJson.error?.message) {
         errDetail = errJson.error.message;
       }

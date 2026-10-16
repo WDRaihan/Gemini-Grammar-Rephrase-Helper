@@ -405,27 +405,10 @@
 }
 
 .gemini-pro-banner-desc {
-    font-size: 12px !important;
+    font-size: 12.5px !important;
     color: #475569 !important;
-    margin: 0 0 10px 0 !important;
-    line-height: 1.4 !important;
-}
-
-.gemini-pro-banner-features {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr !important;
-    gap: 4px 12px !important;
     margin: 0 0 12px 0 !important;
-    padding: 0 !important;
-    list-style: none !important;
-    font-size: 11px !important;
-    color: #334155 !important;
-}
-
-.gemini-pro-banner-features li {
-    display: flex !important;
-    align-items: center !important;
-    gap: 4px !important;
+    line-height: 1.45 !important;
 }
 
 .gemini-pro-banner-actions {
