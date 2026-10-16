@@ -1,5 +1,6 @@
 {
   "gecko_id": "gemini-helper@your-domain.com",
   "strict_min_version": "109.0",
+  "description": "Auto-check grammar & rephrase with Gemini AI. Real-time checks as you type + smart right-click suggestions.",
   "notes": "Replace 'gemini-grammar-rephrase@wdraihan' with your exact Firefox Add-on (AMO) ID found in your AMO Developer Hub dashboard."
 }

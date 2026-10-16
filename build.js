@@ -115,6 +115,7 @@ function buildFirefox(baseManifest) {
   // Read Firefox specific configuration
   let geckoId = 'gemini-grammar-rephrase@wdraihan';
   let minVersion = '109.0';
+  let ffDescription = 'Auto-check grammar & rephrase with Gemini AI. Real-time checks as you type + smart right-click suggestions.';
 
   const configPath = path.join(ROOT_DIR, 'firefox-config.json');
   if (fs.existsSync(configPath)) {
@@ -122,6 +123,7 @@ function buildFirefox(baseManifest) {
       const config = JSON.parse(fs.readFileSync(configPath, 'utf8'));
       if (config.gecko_id) geckoId = config.gecko_id;
       if (config.strict_min_version) minVersion = config.strict_min_version;
+      if (config.description) ffDescription = config.description;
     } catch (err) {
       console.warn(`[WARN] Could not parse firefox-config.json, using defaults:`, err.message);
     }
@@ -130,7 +132,10 @@ function buildFirefox(baseManifest) {
   // Deep clone manifest and transform for Firefox WebExtension requirements
   const ffManifest = JSON.parse(JSON.stringify(baseManifest));
 
-  // 1. Add browser_specific_settings required by Firefox AMO
+  // 1. Tailor description for Firefox (omit Chrome-exclusive Built-in AI)
+  ffManifest.description = ffDescription;
+
+  // 2. Add browser_specific_settings required by Firefox AMO
   ffManifest.browser_specific_settings = {
     gecko: {
       id: geckoId,
