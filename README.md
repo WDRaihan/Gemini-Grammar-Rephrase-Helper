@@ -1,6 +1,6 @@
 # Gemini Grammar & Rephrase Helper
 
-A Chrome Extension (Manifest V3) that uses the Google Gemini API to fix grammar mistakes and generate instant rephrasings for any selected text on the web.
+A Chrome Extension (Manifest V3) powered by free on-device Chrome Built-in AI (Gemini Nano) and the Google Gemini API to auto-check grammar as you type, and generate instant rephrase suggestions via right-click or shortcut (Alt+Shift+G).
 
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue.svg)
 ![Version](https://img.shields.io/badge/Version-1.2.1-green.svg)

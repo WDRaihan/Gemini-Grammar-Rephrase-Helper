@@ -8,27 +8,29 @@
 Gemini Grammar & Rephrase Helper
 
 **Short Description** [REQUIRED]
-Select text, right-click or press shortcut (Alt+Shift+G) to fix grammar mistakes and generate instant rephrasings with Gemini AI.
+Auto-check grammar & rephrase with free Chrome Built-in AI or Gemini. Real-time checks as you type + smart right-click suggestions.
 
 **Detailed Description** [REQUIRED]
-Write with confidence! Instantly fix grammar, rephrase sentences, and get multiple writing suggestions with the power of Google's Gemini AI, directly in your browser.
+Write with confidence! Instantly fix grammar, rephrase sentences, and get smart writing suggestions powered by free Chrome Built-in AI (Gemini Nano) or Google's Gemini cloud API, directly in your browser.
 
-Tired of awkward phrasing and embarrassing typos? Gemini Grammar & Rephrase Helper is your essential writing assistant. Simply select any text on any website, right-click, and get instant, intelligent suggestions to make your writing clear, correct, and compelling.
+Tired of awkward phrasing and embarrassing typos? Gemini Grammar & Rephrase Helper is your essential writing assistant. Auto-check grammar as you type in any input field, or simply select text on any website and right-click to get instant, intelligent suggestions.
 
 Whether you're drafting an important email, writing a report, or posting on social media, this extension helps you communicate your ideas perfectly.
 
 How to Use
 It couldn't be simpler:
-1. Select Text: Highlight the sentence or paragraph you want to improve.
-2. Open Menu or Press Shortcut: Right-click and choose "Fix Grammar & Rephrase", or simply press Alt+Shift+G (Option+Shift+G on Mac).
-3. Review Suggestions: A clean modal overlay appears with one strict grammar correction and two tailored rephrasing alternatives.
-4. Copy: Click the "Copy" button next to your favorite suggestion to instantly copy it to your clipboard.
+1. Auto-Check as You Type: Type into any input field or composer—the extension automatically checks your text and shows a quick-fix badge.
+2. Select Text & Shortcut: Highlight any sentence and right-click to choose "Fix Grammar & Rephrase", or simply press Alt+Shift+G (Option+Shift+G on Mac).
+3. Review Suggestions: A clean modal overlay appears with one strict grammar correction and tailored rephrasing alternatives.
+4. Copy or Apply: Click "Apply Fix" for instant inline replacement or "Copy" to save suggestions to your clipboard.
 
 Key Features
+• 100% Free Chrome Built-in AI: Run on-device with Chrome's built-in Gemini Nano—zero cost, fast, and completely private with no API key required!
+• Real-Time Auto-Check: Automatically inspects text inputs as you type with an elegant inline indicator and 1-click quick fix.
 • Right-Click or Keyboard Shortcut: Trigger suggestions via context menu or quick Alt+Shift+G / Option+Shift+G shortcut (fully customizable in Chrome).
 • AI-Powered Corrections: Fix complex grammar mistakes, typos, and improve sentence structure without altering your original meaning.
 • Multiple Tailored Options: Receive one direct grammar fix and two distinct rephrasing choices to find the perfect tone and style.
-• Powered by Latest Gemini Models: Supports Gemini 2.5 Flash and Gemini 2.0 Flash for lightning-fast, high-quality responses.
+• Powered by Cloud Gemini Models: Also supports cloud Gemini 2.5 Flash and Gemini 2.0 Flash for maximum creative rephrasing power.
 • Auto-Model Detection: Automatically discovers and configures the active Gemini models supported by your API key.
 • Built-In Connection Tester: Verify your API key and connection directly in the settings before you start writing.
 • One-Click Clipboard Copy: Quickly paste your refined text wherever you need it.

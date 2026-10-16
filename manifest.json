@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Gemini Grammar & Rephrase Helper",
   "version": "1.2.1",
-  "description": "Select text, right-click or press shortcut (Alt+Shift+G) to fix grammar and rephrase with Gemini AI.",
+  "description": "Auto-check grammar & rephrase with free Chrome Built-in AI or Gemini. Real-time checks as you type + smart right-click suggestions.",
   "permissions": [
     "contextMenus",
     "activeTab",
