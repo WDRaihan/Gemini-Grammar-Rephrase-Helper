@@ -11,36 +11,115 @@ Gemini Grammar & Rephrase Helper
 Auto-check grammar & rephrase with free Chrome Built-in AI or Gemini. Real-time checks as you type + smart right-click suggestions.
 
 **Detailed Description** [REQUIRED]
-Write with confidence! Instantly fix grammar, rephrase sentences, and get smart writing suggestions powered by free Chrome Built-in AI (Gemini Nano) or Google's Gemini cloud API, directly in your browser.
+Gemini Grammar & Rephrase Helper – AI Writing Assistant
 
-Tired of awkward phrasing and embarrassing typos? Gemini Grammar & Rephrase Helper is your essential writing assistant. Auto-check grammar as you type in any input field, or simply select text on any website and right-click to get instant, intelligent suggestions.
+Write clearly and confidently across the web with Gemini Grammar & Rephrase Helper. Instantly correct grammar and spelling, improve tone, and rephrase sentences using Google Gemini AI or supported Chrome Built-in AI—all directly from your browser.
 
-Whether you're drafting an important email, writing a report, or posting on social media, this extension helps you communicate your ideas perfectly.
+⚡ NEW: Chrome Built-in AI Support
+Use Chrome's built-in Prompt API with Gemini Nano for on-device writing assistance, without an external API key or cloud API requests. Availability depends on your Chrome version, device, and AI configuration.
 
-How to Use
-It couldn't be simpler:
-1. Auto-Check as You Type: Type into any input field or composer—the extension automatically checks your text and shows a quick-fix badge.
-2. Select Text & Shortcut: Highlight any sentence and right-click to choose "Fix Grammar & Rephrase", or simply press Alt+Shift+G (Option+Shift+G on Mac).
-3. Review Suggestions: A clean modal overlay appears with one strict grammar correction and tailored rephrasing alternatives.
-4. Copy or Apply: Click "Apply Fix" for instant inline replacement or "Copy" to save suggestions to your clipboard.
+🌐 Official Website & Documentation: https://ggrh.atplugins.com/
 
-Key Features
-• 100% Free Chrome Built-in AI: Run on-device with Chrome's built-in Gemini Nano—zero cost, fast, and completely private with no API key required!
-• Real-Time Auto-Check: Automatically inspects text inputs as you type with an elegant inline indicator and 1-click quick fix.
-• Right-Click or Keyboard Shortcut: Trigger suggestions via context menu or quick Alt+Shift+G / Option+Shift+G shortcut (fully customizable in Chrome).
-• AI-Powered Corrections: Fix complex grammar mistakes, typos, and improve sentence structure without altering your original meaning.
-• Multiple Tailored Options: Receive one direct grammar fix and two distinct rephrasing choices to find the perfect tone and style.
-• Powered by Cloud Gemini Models: Also supports cloud Gemini 2.5 Flash and Gemini 2.0 Flash for maximum creative rephrasing power.
-• Auto-Model Detection: Automatically discovers and configures the active Gemini models supported by your API key.
-• Built-In Connection Tester: Verify your API key and connection directly in the settings before you start writing.
-• One-Click Clipboard Copy: Quickly paste your refined text wherever you need it.
-• Works on Most Websites: Use it on Gmail, webmail, social media, forums, and standard web pages. (Note: Due to custom web interfaces, this extension does not work inside Google Docs or apps that override standard browser context menus.)
-• Private & Secure: Your Gemini API key is stored securely in your browser's sync storage. Selected text is sent directly to Google's official API—never through third-party proxy servers.
+Your AI Writing Assistant for the Web
+Tired of typos, awkward sentences, or struggling to find the right words? Whether you're writing professional emails in Gmail, sharing updates on LinkedIn, responding to customer inquiries, or chatting with your team on Slack, Gemini Grammar & Rephrase Helper helps you communicate more clearly and professionally.
 
-Easy Setup
-1. Get a free Gemini API key from Google AI Studio (https://aistudio.google.com/).
-2. Open the extension Options page, paste your key, and click "Test Connection".
-3. Click "Save Settings" and you're ready to write with confidence!
+Looking for an alternative to Grammarly? Get AI-powered grammar correction, natural rephrasing, and flexible writing tools directly in your browser, with a choice of supported AI processing methods.
+
+✨ Key Features
+
+🆓 Free Features
+1. Grammar & Spelling Correction
+Fix grammatical errors, spelling mistakes, punctuation issues, and awkward sentences while preserving your original meaning.
+
+2. Three AI-Powered Writing Suggestions
+Get three suggestions for each check:
+• One direct grammar correction.
+• Two natural rephrasing alternatives.
+Choose the version that best fits your message and writing style.
+
+3. Real-Time Inline Writing Assistance
+A floating sparkle badge appears in supported text fields, including textareas and comment boxes. When an issue is detected, open the suggestions and compare your original text with the proposed correction using a side-by-side difference view.
+
+4. Right-Click Context Menu
+Select text on a webpage, right-click, and choose “Fix Grammar & Rephrase with Gemini” to improve your writing without switching tabs.
+
+5. Convenient Keyboard Shortcut
+Use Alt + Shift + G on Windows or Linux, or Option + Shift + G on Mac, to quickly rephrase selected text.
+
+6. Google Gemini Cloud AI
+Connect your own API key from Google AI Studio and use supported Gemini models, including Gemini 2.5 Flash and other models available to your configuration.
+Get started with Google AI Studio: https://aistudio.google.com/
+
+7. Chrome Built-in AI with Gemini Nano
+Use supported Chrome Built-in AI capabilities for on-device text processing. When processing stays entirely on-device, your text does not need to be sent to a cloud AI service.
+No external Gemini API key is required for this mode. Availability depends on your browser and device.
+
+8. One-Click Copy
+Copy any suggested correction or rephrased sentence to your clipboard instantly.
+
+9. Customizable Auto-Check Thresholds
+Choose when automatic checking begins, such as after a space is entered or after a specified number of characters.
+
+10. Direct API Communication
+When using Gemini Cloud, the extension sends text directly to Google's Gemini API using your configured API key, without routing requests through a third-party proxy server.
+
+⭐ Pro Features
+Unlock additional writing tools designed for professional communication and everyday productivity.
+
+1. Executive & Formal Writing Presets
+Turn casual drafts into polished, professional messages suitable for business emails, formal correspondence, and executive communication.
+
+2. Casual Chat & Slack Presets
+Make formal or overly stiff messages sound more natural, friendly, and approachable for team chats and informal conversations.
+
+3. Multilingual Translation & Rephrasing
+Translate and rewrite text in Bangla, Arabic, Spanish, French, German, and other supported languages.
+
+4. Simplify Text & Create Bullet Points
+Make complex writing easier to understand, simplify content for a general audience, or convert long paragraphs into concise bullet points.
+
+5. Unlimited Custom Prompts
+Create your own instructions to control how Gemini rewrites your text. For example:
+• “Write like an enthusiastic startup founder.”
+• “Make this message persuasive for an investor pitch.”
+• “Rewrite this email in a polite and professional tone.”
+
+6. One-Click Inline Apply
+Apply a suggested correction directly to the original text field using the Apply Fix button—no manual copying and pasting required.
+
+7. Personal Rephrasing History
+Access your latest 50 rephrasing results with timestamps, full-text keyword search, style filters, and JSON export.
+
+8. Multi-Device License Management
+Manage your active browser licenses through the Freemius customer portal.
+
+🚀 Quick Setup: Get Started in Three Steps
+Step 1: Pin the Extension
+Click the Extensions puzzle-piece icon in Chrome and pin Gemini Grammar & Rephrase Helper to your toolbar for easy access.
+
+Step 2: Configure Your AI
+Open the extension's settings and choose your preferred processing method:
+• Google Gemini Cloud: Add your API key from https://aistudio.google.com/
+• Chrome Built-in AI: Enable this option if your Chrome version and device support the required on-device AI features.
+
+Step 3: Start Writing
+Type in a supported text field, select text and use the right-click menu, or press the keyboard shortcut to access grammar corrections and rephrasing suggestions.
+
+🔒 Privacy & Security
+Your privacy matters. Gemini Grammar & Rephrase Helper is designed to let you choose how your text is processed.
+• No third-party proxy servers: Gemini Cloud requests are sent directly to Google's official API.
+• No extension-operated text collection: The extension does not store, sell, or monitor your personal text on its own servers.
+• Your API key: Your configured Gemini API key is stored in browser storage and used to communicate with Google's API.
+• On-device processing: When using Chrome Built-in AI, supported text processing takes place locally on your computer, without sending the text to a cloud AI service for that operation.
+
+Cloud AI processing is subject to Google's applicable API terms and data-handling policies. Review the extension's privacy policy for complete details.
+Privacy Policy: https://wdraihan.github.io/gemini-fix-grammar-and-rephrase-helper-extension-privacy/
+
+🌐 Learn More & Get Support
+Website & Documentation: https://ggrh.atplugins.com/
+
+Write better. Communicate clearly. Work confidently.
+Make Gemini Grammar & Rephrase Helper your everyday AI writing companion for clearer, more natural, and more professional communication across the web.
 
 **Category** [REQUIRED]
 Productivity
