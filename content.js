@@ -1043,6 +1043,7 @@ function syncBadgeWithElement(el) {
   removeInlinePopover();
 
   const rawText = getFieldText(root);
+  const text = rawText.trim();
   const isMultiLine = root.tagName === 'TEXTAREA' || root.isContentEditable || root.clientHeight > 45;
 
   // On single-line inputs, require threshold to be met to prevent cluttering empty/tiny search fields
