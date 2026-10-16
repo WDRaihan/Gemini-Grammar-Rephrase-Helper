@@ -292,14 +292,13 @@
             background: transparent;
             color: var(--text-muted);
             font-size: 13.5px;
-            font-weight: 600;
+            font-weight: 500;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.15s ease;
             display: flex;
             align-items: center;
             justify-content: flex-start;
-            gap: 10px;
             box-sizing: border-box;
             text-align: left;
         }
@@ -313,7 +312,7 @@
             background-color: #eff6ff;
             color: var(--primary);
             border-color: #bfdbfe;
-            font-weight: 700;
+            font-weight: 600;
             box-shadow: 0 1px 2px rgba(37, 99, 235, 0.06);
         }
 
@@ -1128,22 +1127,22 @@
             <aside class="settings-sidebar">
                 <nav class="tabs-nav" role="tablist">
                     <button type="button" class="tab-btn active" data-tab="general" role="tab">
-                        <span class="tab-icon">🔑</span> <span class="tab-label">API & Models</span>
+                        API & Models
                     </button>
                     <button type="button" class="tab-btn" data-tab="realtime" role="tab">
-                        <span class="tab-icon">✍️</span> <span class="tab-label">Real-Time Check</span>
+                        Real-Time Check
                     </button>
                     <button type="button" class="tab-btn" data-tab="tokens" role="tab">
-                        <span class="tab-icon">⚡</span> <span class="tab-label">Token Limits</span>
+                        Token Limits
                     </button>
                     <button type="button" class="tab-btn" data-tab="presets" role="tab">
-                        <span class="tab-icon">🎨</span> <span class="tab-label">Style Presets</span>
+                        Style Presets
                     </button>
                     <button type="button" class="tab-btn" data-tab="history" role="tab">
-                        <span class="tab-icon">📜</span> <span class="tab-label">History Log</span>
+                        History Log
                     </button>
                     <button type="button" class="tab-btn" data-tab="pro" role="tab">
-                        <span class="tab-icon">⭐</span> <span class="tab-label">Pro Plan</span>
+                        License
                     </button>
                 </nav>
             </aside>
@@ -1157,7 +1156,7 @@
             <div class="card" style="border: 2px solid #3b82f6; background: linear-gradient(180deg, #f8faff 0%, #ffffff 100%); margin-bottom: 24px;">
                 <div class="card-header" style="border-bottom-color: #dbeafe;">
                     <h2 class="card-title" style="color: #1e40af;">
-                        <span class="icon">🤖</span> Chrome Built-in AI (Prompt API)
+                        Chrome Built-in AI (Prompt API)
                     </h2>
                     <span class="smart-pill" style="background-color: #dbeafe; color: #1d4ed8; font-weight: 700;">100% Free & Local</span>
                 </div>
@@ -1178,7 +1177,7 @@
                 <!-- Browser Status Checker -->
                 <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; padding: 12px 14px; background: #ffffff; border-radius: 8px; border: 1px solid #bfdbfe;">
                     <button type="button" id="check-chrome-ai-btn" class="btn-detect" style="padding: 7px 14px; font-weight: 600;">
-                        <span>🔍</span> Check Browser AI Status
+                        Check Browser AI Status
                     </button>
                     <div id="chrome-ai-status-msg" style="font-size: 12.5px; font-weight: 500; color: #475569;">
                         Click to test if Chrome Gemini Nano is ready on this browser.
@@ -1188,7 +1187,7 @@
 
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title"><span class="icon">🔑</span> Gemini Cloud API Configuration</h2>
+                    <h2 class="card-title">Gemini Cloud API Configuration</h2>
                 </div>
                 
                 <div class="form-group">
@@ -1224,7 +1223,7 @@
                 <!-- Test Connection Row inside the Configuration Card -->
                 <div class="api-test-row">
                     <button type="button" id="test-btn" class="btn-test-connection" title="Verify your Gemini API key and model connection">
-                        <span class="icon">⚡</span> Test Connection
+                        Test Connection
                     </button>
                     <div id="test-status" class="test-status-msg"></div>
                 </div>
@@ -1250,7 +1249,7 @@
         <div id="tab-realtime" class="tab-panel" role="tabpanel">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title"><span class="icon">✍️</span> Real-Time Grammar Check (Inline Typing)</h2>
+                    <h2 class="card-title">Real-Time Grammar Check (Inline Typing)</h2>
                     <span style="font-size: 11.5px; font-weight: 600; color: #2563eb; background-color: #eff6ff; padding: 2px 8px; border-radius: 10px;">Grammarly-Style</span>
                 </div>
 
@@ -1329,7 +1328,7 @@
         <div id="tab-tokens" class="tab-panel" role="tabpanel">
             <div class="card">
                 <div class="card-header">
-                    <h2 class="card-title"><span class="icon">⚡</span> Token Limits & Quota Optimization</h2>
+                    <h2 class="card-title">Token Limits & Quota Optimization</h2>
                     <span style="font-size: 11.5px; font-weight: 600; color: #059669; background-color: #d1fae5; padding: 2px 8px; border-radius: 10px;">Free & Pro</span>
                 </div>
 
@@ -1404,7 +1403,7 @@
             <div id="presets-pro-lock" class="card card-pro" style="display: none;">
                 <div class="card-header" style="border-bottom-color: #dbeafe;">
                     <h2 class="card-title" style="color: #1e3a8a;">
-                        <span class="icon">🔒</span> Pro Feature: Custom Style Presets
+                        Pro Feature: Custom Style Presets
                     </h2>
                     <span class="pro-badge">Pro Required</span>
                 </div>
@@ -1431,7 +1430,7 @@
             <div id="presets-manager" class="card">
                 <div class="card-header">
                     <div>
-                        <h2 class="card-title"><span class="icon">🎨</span> Manage Style Presets</h2>
+                        <h2 class="card-title">Manage Style Presets</h2>
                         <div class="help-text" style="margin-top: 3px;">
                             Enable, disable, or create custom writing transformation styles for your suggestion popup toolbar.
                         </div>
@@ -1492,7 +1491,7 @@
             <div id="history-pro-lock" class="card card-pro" style="display: none;">
                 <div class="card-header" style="border-bottom-color: #dbeafe;">
                     <h2 class="card-title" style="color: #1e3a8a;">
-                        <span class="icon">🔒</span> Pro Feature: Rephrase History Log (Last 50 Rephrasings)
+                        Pro Feature: Rephrase History Log (Last 50 Rephrasings)
                     </h2>
                     <span class="pro-badge">Pro Required</span>
                 </div>
@@ -1519,7 +1518,7 @@
             <div id="history-manager" class="card">
                 <div class="card-header">
                     <div>
-                        <h2 class="card-title"><span class="icon">📜</span> Rephrase History Log</h2>
+                        <h2 class="card-title">Rephrase History Log</h2>
                         <div class="help-text" style="margin-top: 3px;">
                             Review, search, and copy your last 50 rephrasings and grammar improvements with timestamps.
                         </div>
@@ -1564,16 +1563,12 @@
             </div>
         </div>
 
-        <!-- TAB 6: Pro Membership & Presets -->
+        <!-- TAB 6: License & Activation -->
         <div id="tab-pro" class="tab-panel" role="tabpanel">
             <div class="card card-pro">
                 <div class="card-header" style="border-bottom-color: #dbeafe;">
-                    <h2 class="card-title" style="color: #1e3a8a;"><span class="icon">⭐</span> Pro Membership & Custom Styles</h2>
+                    <h2 class="card-title" style="color: #1e3a8a;">License & Activation</h2>
                     <span id="pro-badge" class="pro-badge">Free Plan</span>
-                </div>
-
-                <div class="help-text" style="font-size: 13px; color: #334155; margin-bottom: 14px; line-height: 1.5;">
-                    Pro unlocks instant writing transformations: <strong>Make Formal</strong>, <strong>Simplify for 5th Grader</strong>, <strong>Convert to Bullet Points</strong>, <strong>Casual Slack Message</strong>, unlimited <strong>Custom Prompts</strong>, <strong>Rephrase History Log</strong>, and <strong>1-Click Apply Fix for Real-Time Grammar Check</strong>.
                 </div>
 
                 <!-- Upgrade Link & Client Portal -->
@@ -1600,7 +1595,7 @@
                 </div>
                 
                 <div style="margin-top: 10px; font-size: 13px; line-height: 1.5;">
-                    <span id="license-status-text" style="color: #64748b; word-break: break-word;">Enter your license key above to unlock all styles and custom prompts.</span>
+                    <span id="license-status-text" style="color: #64748b; word-break: break-word;">Enter your license key above to activate your Pro features.</span>
                 </div>
             </div>
         </div>

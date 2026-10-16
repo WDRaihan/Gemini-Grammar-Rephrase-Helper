@@ -735,7 +735,7 @@ if (fsLicenseInput) {
   fsLicenseInput.addEventListener('input', () => {
     fsLicenseInput.style.borderColor = '';
     if (licenseStatusText && licenseStatusText.style.color === 'rgb(220, 38, 38)') {
-      showLicenseStatus('Enter your license key above to unlock all styles and custom prompts.', 'normal');
+      showLicenseStatus('Enter your license key above to activate your Pro features.', 'normal');
     }
   });
 }
@@ -860,7 +860,7 @@ function loadProSettings() {
       if (activateLicenseBtn) activateLicenseBtn.style.display = 'none';
       if (deactivateLicenseBtn) deactivateLicenseBtn.style.display = 'inline-block';
       if (fsPortalManageLink) fsPortalManageLink.style.display = 'inline-flex';
-      showLicenseStatus(`Your ${result.fs_plan_name || 'Pro'} membership is active. Enjoy all style presets!`, 'success');
+      showLicenseStatus(`Your ${result.fs_plan_name || 'Pro'} license is active. All premium features are unlocked!`, 'success');
     } else {
       if (proBadge) {
         proBadge.textContent = 'Free Plan';
@@ -876,7 +876,7 @@ function loadProSettings() {
       if (deactivateLicenseBtn) deactivateLicenseBtn.style.display = 'none';
       if (fsPortalManageLink) fsPortalManageLink.style.display = 'none';
       if (!licenseStatusText || !licenseStatusText.textContent.startsWith('⚠️')) {
-        showLicenseStatus('Enter your license key above to unlock all styles and custom prompts.', 'normal');
+        showLicenseStatus('Enter your license key above to activate your Pro features.', 'normal');
       }
     }
   });
