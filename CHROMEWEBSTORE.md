@@ -148,11 +148,13 @@ English
 
 | Permission | Type | Justification (for Chrome Reviewers) |
 |------------|------|---------------------------------------|
+| `content_scripts (<all_urls>)` | content_scripts | Required to detect editable text fields and provide real-time inline grammar checking and correction badges across any website the user writes on (emails, social media, web forms). |
 | `contextMenus` | permissions | Required to add the "Fix Grammar & Rephrase" item to the user's right-click context menu when text is selected. |
-| `activeTab` | permissions | Required to display the suggestions modal and inject styles directly onto the user's active page only when they explicitly invoke the context menu. |
-| `scripting` | permissions | Required to dynamically insert the content script (`content.js`) and modal stylesheet (`style.css`) into the active tab upon clicking the context menu item. |
-| `storage` | permissions | Required to securely save the user's Gemini API key and model preference across their synced Chrome browser instances. |
-| `https://generativelanguage.googleapis.com/*` | host_permissions | Required to send the user-selected text to the Google Gemini API (`generativelanguage.googleapis.com`) to generate grammar corrections and rephrasings. |
+| `activeTab` | permissions | Required to display the suggestions modal and inject styles directly onto the user's active page when the user explicitly triggers a check. |
+| `scripting` | permissions | Required to dynamically insert the content script and styles into the active tab upon clicking the context menu item or shortcut. |
+| `storage` | permissions | Required to securely save the user's Gemini API key, tone presets, and preferences locally in the browser. |
+| `https://generativelanguage.googleapis.com/*` | host_permissions | Required to send user-selected text directly to Google's official Gemini API to generate grammar corrections and rephrasings. |
+| `https://api.freemius.com/*` | host_permissions | Required to securely validate optional Pro feature license keys via the Freemius API. |
 
 ---
 
