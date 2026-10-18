@@ -3,7 +3,7 @@
 A Chrome Extension (Manifest V3) powered by free on-device Chrome Built-in AI (Gemini Nano) and the Google Gemini API to auto-check grammar as you type, and generate instant rephrase suggestions via right-click or shortcut (Alt+Shift+G).
 
 ![Manifest V3](https://img.shields.io/badge/Manifest-V3-blue.svg)
-![Version](https://img.shields.io/badge/Version-1.2.1-green.svg)
+![Version](https://img.shields.io/badge/Version-1.2.2-green.svg)
 ![License](https://img.shields.io/badge/License-MIT-lightgrey.svg)
 
 ---
@@ -64,8 +64,8 @@ npm run build:firefox
 ```
 
 The output packages will be created in `dist/`:
-- `dist/gemini-grammar-rephrase-chrome-v1.2.1.zip` (for Chrome Web Store)
-- `dist/gemini-grammar-rephrase-firefox-v1.2.1.zip` (for Firefox AMO)
+- `dist/gemini-grammar-rephrase-chrome-v1.2.2.zip` (for Chrome Web Store)
+- `dist/gemini-grammar-rephrase-firefox-v1.2.2.zip` (for Firefox AMO)
 
 For store submission and update guides:
 - [Chrome Web Store Listing Guide](CHROMEWEBSTORE.md)

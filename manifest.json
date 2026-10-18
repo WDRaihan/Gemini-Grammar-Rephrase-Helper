@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Gemini Grammar & Rephrase Helper",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Auto-check grammar & rephrase with free Chrome Built-in AI or Gemini. Real-time checks as you type + smart right-click suggestions.",
   "permissions": [
     "contextMenus",

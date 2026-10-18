@@ -1,6 +1,6 @@
 {
   "name": "gemini-grammar-rephrase-helper",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "description": "Cross-browser Gemini Grammar & Rephrase Helper extension for Chrome and Firefox",
   "scripts": {
     "build": "node build.js --target=all",

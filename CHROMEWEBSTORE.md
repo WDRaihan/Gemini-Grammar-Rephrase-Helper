@@ -183,6 +183,7 @@ English
 
 | Version | Date | Changes | Status |
 |---------|------|---------|--------|
-| 1.2.1 | 2026-10-11 | Centered modal UI fix using flexbox overlay, added Escape key dismissal, added Alt+Shift+G keyboard shortcut with dynamic OS context menu label, API timeout protection, and auto-model discovery | Ready to Submit |
+| 1.2.2 | 2026-10-18 | Auto-check code editor exclusions (WordPress/CodeMirror/Monaco), 7s/10s timeout protections, focus-only typing triggers, and dual-engine AI descriptions | Ready to Submit |
+| 1.2.1 | 2026-10-17 | Centered modal UI fix using flexbox overlay, added Escape key dismissal, added Alt+Shift+G keyboard shortcut with dynamic OS context menu label, API timeout protection, and auto-model discovery | Published |
 | 1.2 | 2026-10-11 | Migrated Gemini API to gemini-2.5-flash, added connection tester | Superseded |
 | 1.1 | Previous | Initial release | Published |

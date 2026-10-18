@@ -36,7 +36,7 @@ This will automatically:
 - Transform the manifest for Firefox MV3 (adding your Gecko ID, configuring `background.scripts`, and setting `options_ui`).
 - Output:
   - **Unpacked Folder**: `dist/firefox/` (for local testing in Firefox)
-  - **Ready-to-Upload ZIP**: `dist/gemini-grammar-rephrase-firefox-v1.2.1.zip`
+  - **Ready-to-Upload ZIP**: `dist/gemini-grammar-rephrase-firefox-v1.2.2.zip`
 
 ---
 
@@ -61,7 +61,7 @@ Before uploading to AMO, you can quickly test the changes in Firefox:
 2. Select your extension: **Gemini Grammar & Rephrase Helper**.
 3. Click **Upload New Version** (or **Submit a New Version**).
 4. Drag and drop the generated file:
-   `dist/gemini-grammar-rephrase-firefox-v1.2.1.zip`
+   `dist/gemini-grammar-rephrase-firefox-v1.2.2.zip`
 5. The automated AMO linter will validate the package.
 6. Under **Reviewer Notes**, you can state:
    > "Upgraded to Manifest V3 with Google Gemini 2.5 / 2.0 Flash support, structured JSON outputs, improved keyboard shortcuts, and enhanced modal UI."
