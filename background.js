@@ -485,7 +485,11 @@ async function executePromptWithBuiltInAI(promptText, tab) {
     }
 
     try {
-      return await session.prompt(promptText);
+      const promptPromise = session.prompt(promptText);
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error("PROMPT_API_TIMEOUT")), 10000)
+      );
+      return await Promise.race([promptPromise, timeoutPromise]);
     } finally {
       try { session.destroy(); } catch (_) {}
     }
@@ -547,7 +551,11 @@ async function executePromptWithBuiltInAI(promptText, tab) {
           }
 
           try {
-            return await session.prompt(pText);
+            const promptPromise = session.prompt(pText);
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error("PROMPT_API_TIMEOUT")), 10000)
+            );
+            return await Promise.race([promptPromise, timeoutPromise]);
           } finally {
             try { session.destroy(); } catch (_) {}
           }
@@ -1151,6 +1159,12 @@ async function handleAutoCheckGrammar(text, tab) {
     return { hasErrors: false };
   }
 
+  // Prevent heavy processing on massive text blocks (source code, books, huge pastes)
+  const MAX_AUTO_CHECK_LENGTH = 2500;
+  if (cleanText.length > MAX_AUTO_CHECK_LENGTH) {
+    return { hasErrors: false, skipped: true };
+  }
+
   // Check cache first
   if (autoCheckCache.has(cleanText)) {
     return autoCheckCache.get(cleanText);
@@ -1235,14 +1249,28 @@ ${JSON.stringify(cleanText)}`;
     }
   };
 
-  const response = await fetch(apiUrl, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-goog-api-key': apiKey
-    },
-    body: JSON.stringify(payload)
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+  let response;
+  try {
+    response = await fetch(apiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-goog-api-key': apiKey
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+  } catch (fetchErr) {
+    if (fetchErr.name === 'AbortError') {
+      return { hasErrors: false, error: 'TIMEOUT' };
+    }
+    throw fetchErr;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   if (!response.ok) {
     let errDetail = `HTTP ${response.status}`;

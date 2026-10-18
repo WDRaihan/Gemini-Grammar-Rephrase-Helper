@@ -772,32 +772,104 @@ chrome.storage.onChanged.addListener((changes, area) => {
   }
 });
 
+/**
+ * Detects whether an element is inside a code editor, IDE, terminal, or technical input.
+ * Grammar auto-checking should never run on code files (e.g. WordPress Theme Editor,
+ * CodeMirror, Monaco, Ace, terminal/consoles, or elements with raw source code).
+ */
+function isIgnoredCodeOrTechnicalInput(el) {
+  if (!el || !(el instanceof HTMLElement)) return true;
+
+  // 1. Password fields, hidden inputs, readonly or disabled fields
+  if (el.tagName === 'INPUT' && el.getAttribute('type') === 'password') return true;
+  if (el.isContentEditable === false && (el.readOnly || el.disabled)) return true;
+
+  // 2. Code editors & IDE containers (WordPress Theme/Plugin Editor, CodeMirror, Monaco, Ace, etc.)
+  const codeEditorSelector = [
+    '.CodeMirror',
+    '.cm-editor',
+    '.cm-content',
+    '.ace_editor',
+    '.monaco-editor',
+    '.prism-editor',
+    '#newcontent',
+    '[name="newcontent"]',
+    '.wp-editor-area.html-active',
+    'pre',
+    'code',
+    '.xterm',
+    '[data-mode]',
+    '[data-language]',
+    '[data-lexical-code]',
+    '[data-gramm="false"]',
+    '[data-enable-grammarly="false"]',
+    '.code-editor',
+    '.ace_text-input',
+    '.monaco-mouse-cursor-text'
+  ].join(', ');
+
+  if (el.matches?.(codeEditorSelector) || el.closest(codeEditorSelector)) {
+    return true;
+  }
+
+  // 3. WordPress Theme / Plugin file editor page check
+  const path = window.location.pathname || '';
+  if (path.includes('theme-editor.php') || path.includes('plugin-editor.php') || path.includes('site-editor.php')) {
+    if (el.id === 'newcontent' || el.closest('#template') || el.closest('#theme-plugin-editor') || el.closest('.CodeMirror')) {
+      return true;
+    }
+  }
+
+  // 4. Code editor input signature: spellcheck=false AND autocorrect=off AND autocapitalize=off
+  const spellcheck = el.getAttribute('spellcheck');
+  const autocorrect = el.getAttribute('autocorrect');
+  const autocapitalize = el.getAttribute('autocapitalize');
+  if (spellcheck === 'false' && autocorrect === 'off' && autocapitalize === 'off') {
+    return true;
+  }
+
+  // 5. Monospace font with spellcheck=false (common pattern for inline raw code/config editors)
+  if (spellcheck === 'false') {
+    try {
+      const font = window.getComputedStyle(el).fontFamily.toLowerCase();
+      if (font.includes('monospace') || font.includes('courier') || font.includes('consolas') || font.includes('menlo')) {
+        return true;
+      }
+    } catch (_) {}
+  }
+
+  return false;
+}
+
 function getRootEditableElement(element) {
   if (!element) return null;
   const el = element.nodeType === Node.TEXT_NODE ? element.parentElement : element;
   if (!el || !(el instanceof HTMLElement)) return null;
 
-  // Never target our own extension UI elements
+  // Never target our own extension UI elements or code editors
   if (el.closest('#gemini-inline-badge') || el.closest('#gemini-inline-popover') || el.closest('#gemini-rephrase-modal')) {
+    return null;
+  }
+  if (isIgnoredCodeOrTechnicalInput(el)) {
     return null;
   }
 
   // 1. Textarea and standard text inputs
-  if (el.tagName === 'TEXTAREA') return el;
+  if (el.tagName === 'TEXTAREA') return isIgnoredCodeOrTechnicalInput(el) ? null : el;
   if (el.tagName === 'INPUT') {
     const type = (el.getAttribute('type') || 'text').toLowerCase();
-    return ['text', 'search', 'email', 'url'].includes(type) ? el : null;
+    return ['text', 'search', 'email', 'url'].includes(type) && !isIgnoredCodeOrTechnicalInput(el) ? el : null;
   }
 
   // 2. Clicked on a wrapper container that holds an editor (e.g. white space in LinkedIn post modal)
   if (el.matches?.('.share-creation-state__text-editor, .share-box-feed-entry__text-editor, .editor-content, .share-creation-state, .artdeco-modal__content')) {
     const innerEditor = el.querySelector('[contenteditable="true"], [contenteditable="plaintext-only"], .ql-editor');
-    if (innerEditor && innerEditor instanceof HTMLElement) return innerEditor;
+    if (innerEditor && innerEditor instanceof HTMLElement && !isIgnoredCodeOrTechnicalInput(innerEditor)) return innerEditor;
   }
 
   // 3. Recognized rich text editor containers (LinkedIn Quill post editor, LinkedIn Message editor, Draft.js, etc.)
   const knownEditor = el.closest('.ql-editor, .msg-form__contenteditable, [role="textbox"], [data-placeholder][contenteditable], [contenteditable="true"], [contenteditable="plaintext-only"]');
-  if (knownEditor && knownEditor instanceof HTMLElement) {
+  if (knownEditor && knownEditor instanceof HTMLElement && !isIgnoredCodeOrTechnicalInput(knownEditor)) {
     return knownEditor;
   }
 
@@ -807,7 +879,7 @@ function getRootEditableElement(element) {
     while (curr.parentElement && curr.parentElement.isContentEditable) {
       curr = curr.parentElement;
     }
-    return curr;
+    return isIgnoredCodeOrTechnicalInput(curr) ? null : curr;
   }
 
   return null;
@@ -1270,16 +1342,36 @@ function scheduleInlineCheck(el) {
     if (currentText.length < 2) return;
     if (state.requestId !== currentReqId) return;
 
+    // Ensure cursor is STILL actively focused inside this input element
+    const currentActive = getRootEditableElement(document.activeElement);
+    if (!currentActive || (currentActive !== root && !root.contains(document.activeElement))) {
+      return;
+    }
+
+    const MAX_AUTO_CHECK_LENGTH = 2500;
+    if (currentText.length > MAX_AUTO_CHECK_LENGTH) {
+      state.status = 'idle';
+      if (activeInputElement === root) {
+        setBadgeState('idle', 'Text is long — select text & right-click');
+      }
+      return;
+    }
+
     state.status = 'checking';
     if (activeInputElement === root) {
       setBadgeState('checking');
     }
 
     try {
-      const response = await chrome.runtime.sendMessage({
+      const checkPromise = chrome.runtime.sendMessage({
         type: 'AUTO_CHECK_GRAMMAR',
         text: currentText
       });
+      const timeoutPromise = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('AUTO_CHECK_TIMEOUT')), 7000)
+      );
+
+      const response = await Promise.race([checkPromise, timeoutPromise]);
 
       // Guard against race conditions: verify this is still the freshest request and text didn't change
       if (state.requestId !== currentReqId) return;
@@ -1334,7 +1426,7 @@ document.addEventListener('focusin', (e) => {
   if (root) {
     activeInputElement = root;
     syncBadgeWithElement(root);
-    scheduleInlineCheck(root);
+    // Checks are triggered when user actually types (input event), not on simple clicks/focus
   }
 }, true);
 
@@ -1342,6 +1434,13 @@ document.addEventListener('focusout', (e) => {
   if (!isAutoCheckEnabled) return;
   const root = getRootEditableElement(e.target);
   if (root) {
+    // Cancel any pending check when the user clicks away
+    const state = getElementState(root);
+    if (state.debounceTimer) {
+      clearTimeout(state.debounceTimer);
+      state.debounceTimer = null;
+    }
+
     setTimeout(() => {
       const currentFocus = getRootEditableElement(document.activeElement);
       // If still inside the same modal dialog (e.g. clicking an emoji button, Proofread button, or modal whitespace), keep badge active
@@ -1372,8 +1471,8 @@ const handleTypingEvent = (e) => {
   }
 };
 
+// Listen on input event for actual text changes (avoiding keyup on non-character navigation keys)
 document.addEventListener('input', handleTypingEvent, true);
-document.addEventListener('keyup', handleTypingEvent, true);
 
 document.addEventListener('click', (e) => {
   if (!isAutoCheckEnabled || !isExtensionValid()) return;
