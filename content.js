@@ -1152,21 +1152,55 @@ function syncBadgeWithElement(el) {
 function positionInlinePopover() {
   if (!activeInlinePopover || !activeInlineBadge) return;
   const badgeRect = activeInlineBadge.getBoundingClientRect();
-  const popoverWidth = 320;
-  let top = badgeRect.top - 210;
-  let left = badgeRect.right - popoverWidth;
+  const popoverRect = activeInlinePopover.getBoundingClientRect();
+  const popoverWidth = popoverRect.width || activeInlinePopover.offsetWidth || 320;
+  const popoverHeight = popoverRect.height || activeInlinePopover.offsetHeight || 320;
 
-  if (badgeRect.top < 230) {
-    top = badgeRect.bottom + 8;
+  const viewportHeight = window.innerHeight;
+  const viewportWidth = window.innerWidth;
+  const margin = 12;
+
+  // Horizontal position: right-align with the badge, clamped within screen margins
+  let left = badgeRect.right - popoverWidth;
+  if (left + popoverWidth > viewportWidth - margin) {
+    left = viewportWidth - popoverWidth - margin;
   }
-  if (left < 10) left = 10;
-  if (left + popoverWidth > window.innerWidth - 10) {
-    left = window.innerWidth - popoverWidth - 10;
+  if (left < margin) {
+    left = margin;
+  }
+
+  // Vertical position:
+  // Calculate space above and below badge
+  const spaceAbove = badgeRect.top - margin;
+  const spaceBelow = viewportHeight - badgeRect.bottom - margin;
+
+  let top;
+  // If popover fits above badge comfortably, place it above
+  if (spaceAbove >= popoverHeight + 8) {
+    top = badgeRect.top - popoverHeight - 8;
+  } else if (spaceBelow >= popoverHeight + 8) {
+    // If popover fits below badge comfortably, place it below
+    top = badgeRect.bottom + 8;
+  } else {
+    // Neither side has full clearance: pick the side with more available space
+    if (spaceAbove >= spaceBelow) {
+      top = badgeRect.top - popoverHeight - 8;
+    } else {
+      top = badgeRect.bottom + 8;
+    }
+  }
+
+  // Strictly clamp within viewport boundaries so buttons can never be pushed off-screen
+  if (top + popoverHeight > viewportHeight - margin) {
+    top = viewportHeight - popoverHeight - margin;
+  }
+  if (top < margin) {
+    top = margin;
   }
 
   activeInlinePopover.style.position = 'fixed';
-  activeInlinePopover.style.top = `${Math.max(10, top)}px`;
-  activeInlinePopover.style.left = `${Math.max(10, left)}px`;
+  activeInlinePopover.style.top = `${Math.round(top)}px`;
+  activeInlinePopover.style.left = `${Math.round(left)}px`;
 }
 
 function toggleInlinePopover() {
@@ -1226,6 +1260,9 @@ function toggleInlinePopover() {
   popoverContainer.appendChild(popover);
   activeInlinePopover = popover;
   positionInlinePopover();
+  requestAnimationFrame(() => {
+    positionInlinePopover();
+  });
 
   popover.addEventListener('mousedown', (e) => {
     e.stopPropagation();

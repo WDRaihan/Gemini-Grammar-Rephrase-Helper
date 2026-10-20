@@ -618,7 +618,10 @@
     position: fixed !important;
     z-index: 2147483647 !important;
     width: 320px !important;
-    max-width: calc(100vw - 32px) !important;
+    max-width: calc(100vw - 24px) !important;
+    max-height: calc(100vh - 24px) !important;
+    display: flex !important;
+    flex-direction: column !important;
     background: #ffffff !important;
     border-radius: 12px !important;
     box-shadow: 0 10px 32px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
@@ -636,6 +639,7 @@
 }
 
 #gemini-inline-popover .popover-header {
+    flex-shrink: 0 !important;
     display: flex !important;
     align-items: center !important;
     justify-content: space-between !important;
@@ -672,6 +676,12 @@
 
 #gemini-inline-popover .popover-body {
     padding: 14px !important;
+    overflow-y: auto !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
 }
 
 #gemini-inline-popover .popover-explanation {
@@ -679,6 +689,7 @@
     color: #64748b !important;
     margin: 0 0 10px 0 !important;
     line-height: 1.4 !important;
+    flex-shrink: 0 !important;
 }
 
 #gemini-inline-popover .popover-diff {
@@ -688,13 +699,14 @@
     padding: 10px 12px !important;
     font-size: 13.5px !important;
     line-height: 1.5 !important;
-    margin-bottom: 14px !important;
+    margin-bottom: 12px !important;
     word-break: break-word !important;
     max-height: 140px !important;
     overflow-y: auto !important;
     user-select: text !important;
     -webkit-user-select: text !important;
     cursor: text !important;
+    flex-shrink: 0 !important;
 }
 
 #gemini-inline-popover .popover-diff del {
@@ -722,6 +734,8 @@
 #gemini-inline-popover .popover-actions {
     display: flex !important;
     gap: 8px !important;
+    flex-shrink: 0 !important;
+    margin-top: auto !important;
 }
 
 #gemini-inline-popover .btn-apply-fix {
@@ -766,6 +780,7 @@
     padding: 6px 10px !important;
     border-radius: 6px !important;
     border: 1px dashed #cbd5e1 !important;
+    flex-shrink: 0 !important;
 }
 
 #gemini-inline-popover .btn-dismiss-fix {
