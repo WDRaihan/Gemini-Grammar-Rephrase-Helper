@@ -101,15 +101,14 @@ async function checkChromeBuiltInAIStatus() {
 
   if (!ModelAPI) {
     chromeAiStatusMsg.innerHTML = `
-      <div style="margin-top: 4px; line-height: 1.6;">
-        <span style="color: #b45309; font-weight: 700;">⚠️ Prompt API not enabled in this Chrome browser.</span><br/>
-        <span style="font-size: 12px; color: #475569;">To activate Google's free on-device Gemini Nano:</span>
-        <ol style="margin: 6px 0 0 18px; padding: 0; font-size: 11.5px; color: #334155; line-height: 1.6;">
-          <li>Open <code>chrome://flags</code> in your address bar.</li>
-          <li>Set <strong>#prompt-api-for-gemini-nano</strong> to <strong>Enabled</strong>.</li>
-          <li>Set <strong>#optimization-guide-on-device-model</strong> to <strong>Enabled BypassPerfRequirement</strong>.</li>
-          <li>Click <strong>Relaunch</strong> Chrome.</li>
-          <li>Go to <code>chrome://components</code> and click <strong>Check for update</strong> on <em>Optimization Guide On Device Model</em> (~1.5GB).</li>
+      <div style="margin-top: 6px; line-height: 1.6; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; padding: 10px 14px;">
+        <div style="color: #b45309; font-weight: 700; font-size: 13px;">⚠️ Prompt API flags not enabled in Chrome</div>
+        <p style="font-size: 12px; color: #475569; margin: 4px 0 8px 0;">Chrome requires these two flags to be enabled for local Gemini Nano:</p>
+        <ol style="margin: 0 0 0 18px; padding: 0; font-size: 12px; color: #334155; line-height: 1.7;">
+          <li>Copy <code>chrome://flags/#prompt-api-for-gemini-nano</code> <button type="button" class="btn-copy-flag" data-copy="chrome://flags/#prompt-api-for-gemini-nano" style="padding: 1px 7px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff; cursor: pointer; color: #1e293b;">Copy</button> &rarr; paste into address bar &rarr; set to <strong>Enabled</strong>.</li>
+          <li>Copy <code>chrome://flags/#optimization-guide-on-device-model</code> <button type="button" class="btn-copy-flag" data-copy="chrome://flags/#optimization-guide-on-device-model" style="padding: 1px 7px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff; cursor: pointer; color: #1e293b;">Copy</button> &rarr; paste into address bar &rarr; set to <strong>Enabled BypassPerfRequirement</strong>.</li>
+          <li>Click the blue <strong>Relaunch</strong> button at the bottom of Chrome.</li>
+          <li>Return here and click <strong>Check Browser AI Status</strong> again.</li>
         </ol>
       </div>
     `;
@@ -135,15 +134,58 @@ async function checkChromeBuiltInAIStatus() {
       availableStatus = caps?.available || 'readily';
     }
 
-    if (availableStatus === 'readily' || availableStatus === 'available') {
-      chromeAiStatusMsg.innerHTML = `🟢 <strong>Ready to use!</strong> Chrome Gemini Nano is downloaded and active on this device.`;
+    const isReady = availableStatus === 'readily' || availableStatus === 'available' || availableStatus === 1;
+    const isDownloadable = availableStatus === 'after-download' || availableStatus === 'downloadable';
+    const isDownloading = availableStatus === 'downloading';
+    const isBlocked = availableStatus === 'no' || availableStatus === 'unavailable' || String(availableStatus).includes('3');
+
+    if (isReady) {
+      chromeAiStatusMsg.innerHTML = `
+        <div style="margin-top: 6px; padding: 10px 14px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 6px; line-height: 1.5;">
+          <div style="color: #15803d; font-weight: 700; font-size: 13px;">🟢 Ready to use!</div>
+          <div style="font-size: 12px; color: #166534; margin-top: 3px;">
+            Chrome Gemini Nano is downloaded and active on this device. Turn on the toggle above to check grammar 100% locally with zero cost and maximum privacy.
+          </div>
+        </div>
+      `;
       chromeAiStatusMsg.style.color = '#15803d';
-    } else if (availableStatus === 'after-download' || availableStatus === 'downloadable') {
-      chromeAiStatusMsg.innerHTML = `🟡 <strong>Supported!</strong> Gemini Nano will download automatically when first used (~1.5GB).`;
+    } else if (isDownloadable) {
+      chromeAiStatusMsg.innerHTML = `
+        <div style="margin-top: 6px; padding: 10px 14px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; line-height: 1.6;">
+          <div style="color: #1d4ed8; font-weight: 700; font-size: 13px;">🟡 Supported! Model needs to be downloaded (~1.5GB)</div>
+          <p style="font-size: 12px; color: #334155; margin: 4px 0 8px 0;">Your device is eligible. To trigger the Gemini Nano download:</p>
+          <ol style="margin: 0 0 0 18px; padding: 0; font-size: 12px; color: #334155; line-height: 1.7;">
+            <li>Copy <code>chrome://components</code> <button type="button" class="btn-copy-flag" data-copy="chrome://components" style="padding: 1px 7px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff; cursor: pointer; color: #1e293b;">Copy</button> &rarr; paste into address bar.</li>
+            <li>Find <strong>Optimization Guide On Device Model</strong> and click <strong>Check for update</strong>.</li>
+            <li>Wait until the version changes from <em>0.0.0.0</em> to an active version number.</li>
+          </ol>
+        </div>
+      `;
       chromeAiStatusMsg.style.color = '#2563eb';
-    } else if (availableStatus === 'downloading') {
-      chromeAiStatusMsg.innerHTML = `⏳ <strong>Downloading...</strong> Gemini Nano is currently downloading.`;
+    } else if (isDownloading) {
+      chromeAiStatusMsg.innerHTML = `
+        <div style="margin-top: 6px; padding: 10px 14px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; line-height: 1.5;">
+          <div style="color: #2563eb; font-weight: 700; font-size: 13px;">⏳ Downloading Gemini Nano...</div>
+          <div style="font-size: 12px; color: #334155; margin-top: 3px;">
+            Chrome is currently downloading the ~1.5 GB model in the background. Keep Chrome open and connected to unmetered Wi-Fi. You can monitor progress at <code>chrome://on-device-internals</code> <button type="button" class="btn-copy-flag" data-copy="chrome://on-device-internals" style="padding: 1px 7px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff; cursor: pointer; color: #1e293b;">Copy</button>.
+          </div>
+        </div>
+      `;
       chromeAiStatusMsg.style.color = '#2563eb';
+    } else if (isBlocked) {
+      chromeAiStatusMsg.innerHTML = `
+        <div style="margin-top: 6px; padding: 10px 14px; background: #fffbeb; border: 1px solid #fef3c7; border-radius: 6px; line-height: 1.6;">
+          <div style="color: #b45309; font-weight: 700; font-size: 13px;">⚠️ Status: ${availableStatus} (Hardware or Storage Gate Blocked)</div>
+          <p style="font-size: 12px; color: #475569; margin: 4px 0 8px 0;">Chrome's automated check blocked on-device AI. Follow these steps to resolve:</p>
+          <ol style="margin: 0 0 0 18px; padding: 0; font-size: 12px; color: #334155; line-height: 1.7;">
+            <li><strong>Bypass GPU/Hardware requirement:</strong> In <code>chrome://flags</code>, set <strong>#optimization-guide-on-device-model</strong> <button type="button" class="btn-copy-flag" data-copy="chrome://flags/#optimization-guide-on-device-model" style="padding: 1px 7px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff; cursor: pointer; color: #1e293b;">Copy</button> to <strong>Enabled BypassPerfRequirement</strong> &rarr; click <strong>Relaunch</strong>.</li>
+            <li><strong>Check primary disk storage:</strong> Chrome requires <strong>22 GB free disk space</strong> on the drive where your Chrome User Profile is stored (e.g. <code>C:</code> drive on Windows). Ensure you have ~25+ GB free.</li>
+            <li><strong>Inspect exact reason:</strong> Paste <code>chrome://on-device-internals</code> <button type="button" class="btn-copy-flag" data-copy="chrome://on-device-internals" style="padding: 1px 7px; font-size: 11px; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff; cursor: pointer; color: #1e293b;">Copy</button> into address bar &rarr; click <strong>Model Status</strong> tab to view diagnostic logs.</li>
+            <li><strong>Cloud Fallback:</strong> If this computer cannot run local models, keep this toggle OFF and use the <strong>free Gemini Cloud API</strong> below (zero download required).</li>
+          </ol>
+        </div>
+      `;
+      chromeAiStatusMsg.style.color = '#b45309';
     } else {
       chromeAiStatusMsg.innerHTML = `⚠️ <strong>Status: ${availableStatus}</strong>. Device or storage requirements may not be met.`;
       chromeAiStatusMsg.style.color = '#b45309';
@@ -153,6 +195,25 @@ async function checkChromeBuiltInAIStatus() {
     chromeAiStatusMsg.style.color = '#dc2626';
   }
 }
+
+// Global click listener for copy-flag buttons in status messages
+document.addEventListener('click', (e) => {
+  const copyBtn = e.target.closest('.btn-copy-flag');
+  if (copyBtn) {
+    const textToCopy = copyBtn.getAttribute('data-copy');
+    if (textToCopy) {
+      navigator.clipboard.writeText(textToCopy).then(() => {
+        const origText = copyBtn.textContent;
+        copyBtn.textContent = '✓ Copied';
+        copyBtn.style.color = '#16a34a';
+        setTimeout(() => {
+          copyBtn.textContent = origText;
+          copyBtn.style.color = '#1e293b';
+        }, 2000);
+      }).catch(() => {});
+    }
+  }
+});
 
 if (checkChromeAiBtn) {
   checkChromeAiBtn.addEventListener('click', checkChromeBuiltInAIStatus);

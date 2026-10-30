@@ -1463,7 +1463,6 @@ document.addEventListener('focusin', (e) => {
   if (root) {
     activeInputElement = root;
     syncBadgeWithElement(root);
-    // Checks are triggered when user actually types (input event), not on simple clicks/focus
   }
 }, true);
 
@@ -1480,19 +1479,15 @@ document.addEventListener('focusout', (e) => {
 
     setTimeout(() => {
       const currentFocus = getRootEditableElement(document.activeElement);
-      // If still inside the same modal dialog (e.g. clicking an emoji button, Proofread button, or modal whitespace), keep badge active
-      const modalDialog = activeInputElement?.closest?.('dialog, .artdeco-modal, [role="dialog"], #artdeco-modal-outlet');
-      const activeModal = document.activeElement?.closest?.('dialog, .artdeco-modal, [role="dialog"], #artdeco-modal-outlet');
-      const stillInSameModal = modalDialog && activeModal && (modalDialog === activeModal);
-
-      if (!currentFocus && !stillInSameModal && 
+      if (!currentFocus && 
           !document.activeElement?.closest?.('#gemini-inline-popover') && 
           !document.activeElement?.closest?.('#gemini-inline-badge')) {
         if (!activeInlinePopover) {
           removeInlineBadge();
+          activeInputElement = null;
         }
       }
-    }, 200);
+    }, 150);
   }
 }, true);
 
@@ -1500,7 +1495,7 @@ const handleTypingEvent = (e) => {
   if (!isAutoCheckEnabled || !isExtensionValid()) return;
   const root = getRootEditableElement(e.target);
   if (root) {
-    if (activeInputElement !== root) {
+    if (activeInputElement !== root || !activeInlineBadge) {
       activeInputElement = root;
       syncBadgeWithElement(root);
     }
@@ -1514,31 +1509,34 @@ document.addEventListener('input', handleTypingEvent, true);
 document.addEventListener('click', (e) => {
   if (!isAutoCheckEnabled || !isExtensionValid()) return;
 
-  if (activeInlinePopover && !e.target.closest('#gemini-inline-popover') && !e.target.closest('#gemini-inline-badge')) {
-    removeInlinePopover();
-    if (!getRootEditableElement(document.activeElement)) {
-      removeInlineBadge();
-      return;
-    }
+  // Never dismiss when interacting with the badge or the popover itself
+  if (e.target.closest('#gemini-inline-popover') || e.target.closest('#gemini-inline-badge')) {
+    return;
   }
 
   const root = getRootEditableElement(e.target);
   if (root) {
+    // User explicitly clicked directly inside an editable input / textarea
+    if (activeInputElement && activeInputElement !== root) {
+      removeInlinePopover();
+    }
     activeInputElement = root;
     syncBadgeWithElement(root);
+  } else {
+    // User clicked outside any input: hide badge and popover immediately
+    removeInlinePopover();
+    removeInlineBadge();
+    activeInputElement = null;
   }
 }, true);
 
 document.addEventListener('selectionchange', () => {
   if (!isAutoCheckEnabled || !isExtensionValid()) return;
+  // Only update position if badge is already active for the current activeInputElement
+  if (!activeInputElement || !activeInlineBadge) return;
   const root = getRootEditableElement(document.activeElement);
-  if (root) {
-    if (activeInputElement !== root) {
-      activeInputElement = root;
-      syncBadgeWithElement(root);
-    } else {
-      updateBadgePosition();
-    }
+  if (root && root === activeInputElement) {
+    updateBadgePosition();
   }
 });
 
@@ -1546,14 +1544,14 @@ document.addEventListener('selectionchange', () => {
 window.addEventListener('scroll', updateBadgePosition, { passive: true, capture: true });
 window.addEventListener('resize', updateBadgePosition, { passive: true });
 
-// MutationObserver to immediately detect when LinkedIn post modal / share box mounts
+// MutationObserver to detect when modal editors mount
 if (typeof MutationObserver !== 'undefined') {
   const modalObserver = new MutationObserver(() => {
     if (!isAutoCheckEnabled) return;
     const postEditor = document.querySelector('.artdeco-modal [contenteditable="true"], .share-creation-state [contenteditable="true"], [role="dialog"] .ql-editor');
     if (postEditor && postEditor !== activeInputElement && postEditor.offsetParent !== null) {
-      // Auto-activate for the modal post editor if focused or open
-      if (document.activeElement === postEditor || postEditor.contains(document.activeElement) || !activeInputElement) {
+      // Auto-activate for the modal post editor only if actively focused by the user
+      if (document.activeElement === postEditor || postEditor.contains(document.activeElement)) {
         activeInputElement = postEditor;
         syncBadgeWithElement(postEditor);
         scheduleInlineCheck(postEditor);
