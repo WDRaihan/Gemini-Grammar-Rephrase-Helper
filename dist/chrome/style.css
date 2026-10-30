@@ -1,0 +1,801 @@
+/* style.css - Robust Centered Modal Styles */
+
+#gemini-rephrase-modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 2147483647 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    margin: 0 !important;
+    padding: 20px !important;
+    box-sizing: border-box !important;
+    pointer-events: auto !important;
+}
+
+#gemini-modal-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background-color: rgba(0, 0, 0, 0.6) !important;
+    backdrop-filter: blur(4px) !important;
+    z-index: 2147483646 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+#gemini-modal-content {
+    position: relative !important;
+    z-index: 2147483647 !important;
+    width: 100% !important;
+    max-width: 600px !important;
+    max-height: 85vh !important;
+    background-color: #ffffff !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    margin: auto !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+    font-size: 16px !important;
+    line-height: 1.5 !important;
+    color: #2c3e50 !important;
+    text-align: left !important;
+    animation: geminiModalFadeIn 0.2s ease-out !important;
+}
+
+@keyframes geminiModalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+#gemini-modal-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: 14px 20px !important;
+    background-color: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+}
+
+#gemini-modal-header h2 {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 18px !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    line-height: 1.3 !important;
+}
+
+#gemini-modal-close-btn {
+    background: none !important;
+    border: none !important;
+    font-size: 26px !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+    color: #64748b !important;
+    padding: 0 4px !important;
+    margin: 0 !important;
+    transition: color 0.15s ease !important;
+}
+
+#gemini-modal-close-btn:hover {
+    color: #0f172a !important;
+}
+
+#gemini-modal-history-btn {
+    background: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    font-size: 11.5px !important;
+    font-weight: 600 !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+    color: #475569 !important;
+    padding: 5px 8px !important;
+    margin: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    transition: all 0.15s ease !important;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04) !important;
+}
+
+#gemini-modal-history-btn:hover {
+    background-color: #f8fafc !important;
+    color: #1e293b !important;
+    border-color: #94a3b8 !important;
+}
+
+#gemini-modal-body {
+    padding: 20px !important;
+    text-align: center !important;
+    overflow-y: auto !important;
+    box-sizing: border-box !important;
+    max-height: calc(85vh - 60px) !important;
+}
+
+/* List styles */
+.suggestion-list {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.suggestion-item {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    gap: 15px !important;
+    padding: 14px 16px !important;
+    background: #f8fafc !important;
+    border-radius: 8px !important;
+    border: 1px solid #e2e8f0 !important;
+    text-align: left !important;
+    box-sizing: border-box !important;
+}
+
+.suggestion-content {
+    flex-grow: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 6px !important;
+    box-sizing: border-box !important;
+}
+
+.suggestion-badge {
+    align-self: flex-start !important;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    padding: 2px 8px !important;
+    border-radius: 4px !important;
+    background-color: #e0f2fe !important;
+    color: #0369a1 !important;
+    line-height: 1.4 !important;
+    box-sizing: border-box !important;
+}
+
+.suggestion-item .suggestion-text {
+    margin: 0 !important;
+    padding: 0 !important;
+    color: #1e293b !important;
+    font-size: 15px !important;
+    line-height: 1.5 !important;
+    word-break: break-word !important;
+}
+
+.suggestion-item .copy-suggestion-btn {
+    flex-shrink: 0 !important;
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    border: none !important;
+    padding: 8px 16px !important;
+    border-radius: 6px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: background-color 0.2s ease, transform 0.1s ease !important;
+    box-sizing: border-box !important;
+}
+
+.suggestion-item .copy-suggestion-btn:hover {
+    background-color: #1d4ed8 !important;
+}
+
+.suggestion-item .copy-suggestion-btn:active {
+    transform: scale(0.97) !important;
+}
+
+/* Error message style */
+#gemini-modal-body .error-text {
+    background-color: #fef2f2 !important;
+    border-left: 4px solid #ef4444 !important;
+    padding: 14px 16px !important;
+    border-radius: 6px !important;
+    text-align: left !important;
+    font-size: 14px !important;
+    color: #991b1b !important;
+    white-space: pre-wrap !important;
+    margin: 0 !important;
+    line-height: 1.5 !important;
+    box-sizing: border-box !important;
+}
+
+/* Loading Spinner */
+.spinner {
+    border: 3px solid #e2e8f0 !important;
+    border-top: 3px solid #2563eb !important;
+    border-radius: 50% !important;
+    width: 36px !important;
+    height: 36px !important;
+    animation: geminiSpin 0.9s linear infinite !important;
+    margin: 20px auto !important;
+    box-sizing: border-box !important;
+}
+
+@keyframes geminiSpin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* ==========================================================================
+   Style Presets Toolbar & Pro Features
+   ========================================================================== */
+
+#gemini-modal-presets {
+    display: none !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    padding: 10px 16px !important;
+    background-color: #f1f5f9 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    box-sizing: border-box !important;
+    align-items: center !important;
+}
+
+#gemini-modal-presets.visible {
+    display: flex !important;
+}
+
+.gemini-preset-pill {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    color: #475569 !important;
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 20px !important;
+    cursor: pointer !important;
+    transition: all 0.15s ease !important;
+    white-space: nowrap !important;
+    line-height: 1.2 !important;
+    box-sizing: border-box !important;
+    user-select: none !important;
+}
+
+.gemini-preset-pill:hover {
+    background-color: #f8fafc !important;
+    border-color: #94a3b8 !important;
+    color: #1e293b !important;
+}
+
+.gemini-preset-pill.active {
+    background-color: #2563eb !important;
+    border-color: #2563eb !important;
+    color: #ffffff !important;
+    box-shadow: 0 1px 3px rgba(37, 99, 235, 0.3) !important;
+}
+
+.gemini-preset-pill.active .gemini-pro-tag {
+    background-color: rgba(255, 255, 255, 0.25) !important;
+    color: #ffffff !important;
+}
+
+.gemini-pro-tag {
+    font-size: 9px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    padding: 1px 5px !important;
+    border-radius: 4px !important;
+    background-color: #fef3c7 !important;
+    color: #92400e !important;
+    display: inline-block !important;
+    line-height: 1.2 !important;
+}
+
+/* Custom Prompt Input Container */
+#gemini-custom-prompt-container {
+    display: none !important;
+    gap: 8px !important;
+    padding: 10px 16px !important;
+    background-color: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+    box-sizing: border-box !important;
+    align-items: center !important;
+}
+
+#gemini-custom-prompt-container.visible {
+    display: flex !important;
+}
+
+#gemini-custom-prompt-input {
+    flex-grow: 1 !important;
+    padding: 7px 12px !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    color: #1e293b !important;
+    background-color: #ffffff !important;
+    box-sizing: border-box !important;
+    outline: none !important;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease !important;
+}
+
+#gemini-custom-prompt-input:focus {
+    border-color: #2563eb !important;
+    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15) !important;
+}
+
+#gemini-custom-prompt-btn {
+    padding: 7px 14px !important;
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: background-color 0.15s ease !important;
+    white-space: nowrap !important;
+}
+
+#gemini-custom-prompt-btn:hover {
+    background-color: #1d4ed8 !important;
+}
+
+/* Pro Upgrade Banner inside Suggestion Popup */
+#gemini-pro-upgrade-banner {
+    background: linear-gradient(135deg, #eff6ff 0%, #fdf4ff 100%) !important;
+    border: 1px solid #c7d2fe !important;
+    border-radius: 8px !important;
+    padding: 14px 16px !important;
+    margin-bottom: 16px !important;
+    text-align: left !important;
+    box-sizing: border-box !important;
+    animation: geminiModalFadeIn 0.2s ease-out !important;
+}
+
+.gemini-pro-banner-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 8px !important;
+}
+
+.gemini-pro-banner-title {
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: #4338ca !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    margin: 0 !important;
+}
+
+.gemini-pro-banner-close {
+    background: none !important;
+    border: none !important;
+    font-size: 18px !important;
+    color: #6b7280 !important;
+    cursor: pointer !important;
+    padding: 0 4px !important;
+    line-height: 1 !important;
+}
+
+.gemini-pro-banner-close:hover {
+    color: #1f2937 !important;
+}
+
+.gemini-pro-banner-desc {
+    font-size: 12.5px !important;
+    color: #475569 !important;
+    margin: 0 0 12px 0 !important;
+    line-height: 1.45 !important;
+}
+
+.gemini-pro-banner-actions {
+    display: flex !important;
+    gap: 8px !important;
+    align-items: center !important;
+}
+
+.gemini-btn-buy-pro {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 6px !important;
+    padding: 7px 14px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    text-decoration: none !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 5px !important;
+    box-shadow: 0 2px 6px rgba(79, 70, 229, 0.25) !important;
+    transition: opacity 0.15s ease !important;
+}
+
+.gemini-btn-buy-pro:hover {
+    opacity: 0.92 !important;
+}
+
+.gemini-btn-activate-link {
+    font-size: 11px !important;
+    color: #4f46e5 !important;
+    background: none !important;
+    border: none !important;
+    text-decoration: underline !important;
+    cursor: pointer !important;
+    padding: 0 !important;
+}
+
+.gemini-btn-activate-link:hover {
+    color: #3730a3 !important;
+}
+
+.gemini-pro-inline-activate {
+    display: flex !important;
+    gap: 6px !important;
+    margin-top: 8px !important;
+    align-items: center !important;
+}
+
+.gemini-pro-inline-activate input {
+    flex-grow: 1 !important;
+    padding: 5px 8px !important;
+    font-size: 12px !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 4px !important;
+    background: #ffffff !important;
+}
+
+.gemini-pro-inline-activate button {
+    padding: 5px 10px !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    border: none !important;
+    border-radius: 4px !important;
+    cursor: pointer !important;
+}
+
+/* ==========================================================================
+   Grammarly-Style Compact Circular Inline Badge & Popover
+   ========================================================================== */
+
+#gemini-inline-badge {
+    position: fixed !important;
+    z-index: 2147483647 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 24px !important;
+    height: 24px !important;
+    background: #ffffff !important;
+    border: 1.5px solid #cbd5e1 !important;
+    border-radius: 50% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    box-shadow: 0 1px 5px rgba(0, 0, 0, 0.1) !important;
+    cursor: pointer !important;
+    user-select: none !important;
+    transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    box-sizing: border-box !important;
+    pointer-events: auto !important;
+    overflow: visible !important;
+}
+
+#gemini-inline-badge:hover {
+    transform: scale(1.1) !important;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18) !important;
+    border-color: #94a3b8 !important;
+}
+
+#gemini-inline-badge .gemini-badge-img {
+    width: 14px !important;
+    height: 14px !important;
+    object-fit: contain !important;
+    pointer-events: none !important;
+    display: block !important;
+}
+
+#gemini-inline-badge .gemini-badge-dot {
+    display: none !important;
+}
+
+/* 1. Checking State: Smooth spinning animated ring */
+#gemini-inline-badge.checking {
+    border-color: #93c5fd !important;
+    background: #eff6ff !important;
+    box-shadow: 0 1px 4px rgba(59, 130, 246, 0.15) !important;
+}
+
+#gemini-inline-badge.checking::before {
+    content: '' !important;
+    position: absolute !important;
+    inset: -3px !important;
+    border-radius: 50% !important;
+    border: 2px solid rgba(59, 130, 246, 0.2) !important;
+    border-top-color: #2563eb !important;
+    border-right-color: #3b82f6 !important;
+    animation: geminiSmoothSpin 0.75s linear infinite !important;
+    pointer-events: none !important;
+    box-sizing: border-box !important;
+    will-change: transform !important;
+}
+
+#gemini-inline-badge.checking .gemini-badge-img {
+    animation: geminiIconSubtlePulse 1.2s ease-in-out infinite !important;
+}
+
+@keyframes geminiSmoothSpin {
+    0% {
+        transform: rotate(0deg);
+    }
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes geminiIconSubtlePulse {
+    0%, 100% {
+        transform: scale(0.92);
+        opacity: 0.85;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 1;
+    }
+}
+
+/* 2. Error State: Red status like Grammarly */
+#gemini-inline-badge.has-error {
+    border-color: #ef4444 !important;
+    background: #fef2f2 !important;
+    box-shadow: 0 2px 8px rgba(239, 68, 68, 0.3) !important;
+}
+
+#gemini-inline-badge.has-error:hover {
+    border-color: #dc2626 !important;
+    box-shadow: 0 3px 12px rgba(239, 68, 68, 0.45) !important;
+}
+
+#gemini-inline-badge.has-error .gemini-badge-dot {
+    display: block !important;
+    position: absolute !important;
+    top: -3px !important;
+    right: -3px !important;
+    width: 8px !important;
+    height: 8px !important;
+    border-radius: 50% !important;
+    background-color: #ef4444 !important;
+    border: 1.5px solid #ffffff !important;
+    box-shadow: 0 1px 3px rgba(239, 68, 68, 0.5) !important;
+}
+
+/* 3. Clean / Good State: Green status */
+#gemini-inline-badge.clean {
+    border-color: #10b981 !important;
+    background: #ecfdf5 !important;
+    box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25) !important;
+}
+
+#gemini-inline-badge.clean .gemini-badge-dot {
+    display: block !important;
+    position: absolute !important;
+    top: -3px !important;
+    right: -3px !important;
+    width: 8px !important;
+    height: 8px !important;
+    border-radius: 50% !important;
+    background-color: #10b981 !important;
+    border: 1.5px solid #ffffff !important;
+    box-shadow: 0 1px 3px rgba(16, 185, 129, 0.5) !important;
+}
+
+/* Inline Popover Card */
+#gemini-inline-popover {
+    position: fixed !important;
+    z-index: 2147483647 !important;
+    width: 320px !important;
+    max-width: calc(100vw - 24px) !important;
+    max-height: calc(100vh - 24px) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    background: #ffffff !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 32px rgba(15, 23, 42, 0.2), 0 0 0 1px rgba(0, 0, 0, 0.05) !important;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+    color: #1e293b !important;
+    box-sizing: border-box !important;
+    overflow: hidden !important;
+    animation: geminiPopoverFade 0.18s cubic-bezier(0.16, 1, 0.3, 1) !important;
+    pointer-events: auto !important;
+}
+
+@keyframes geminiPopoverFade {
+    from { opacity: 0; transform: translateY(6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#gemini-inline-popover .popover-header {
+    flex-shrink: 0 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding: 10px 14px !important;
+    background-color: #f8fafc !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+#gemini-inline-popover .popover-title {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+    margin: 0 !important;
+}
+
+#gemini-inline-popover .popover-close {
+    background: none !important;
+    border: none !important;
+    font-size: 16px !important;
+    line-height: 1 !important;
+    cursor: pointer !important;
+    color: #64748b !important;
+    padding: 2px 6px !important;
+    border-radius: 4px !important;
+}
+
+#gemini-inline-popover .popover-close:hover {
+    background-color: #e2e8f0 !important;
+    color: #0f172a !important;
+}
+
+#gemini-inline-popover .popover-body {
+    padding: 14px !important;
+    overflow-y: auto !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    box-sizing: border-box !important;
+}
+
+#gemini-inline-popover .popover-explanation {
+    font-size: 12px !important;
+    color: #64748b !important;
+    margin: 0 0 10px 0 !important;
+    line-height: 1.4 !important;
+    flex-shrink: 0 !important;
+}
+
+#gemini-inline-popover .popover-diff {
+    background: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 8px !important;
+    padding: 10px 12px !important;
+    font-size: 13.5px !important;
+    line-height: 1.5 !important;
+    margin-bottom: 12px !important;
+    word-break: break-word !important;
+    max-height: 140px !important;
+    overflow-y: auto !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    cursor: text !important;
+    flex-shrink: 0 !important;
+}
+
+#gemini-inline-popover .popover-diff del {
+    background-color: #fee2e2 !important;
+    color: #991b1b !important;
+    text-decoration: line-through !important;
+    padding: 1px 3px !important;
+    border-radius: 3px !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+}
+
+#gemini-inline-popover .popover-diff ins {
+    background-color: #dcfce7 !important;
+    color: #166534 !important;
+    text-decoration: none !important;
+    font-weight: 600 !important;
+    padding: 1px 3px !important;
+    border-radius: 3px !important;
+    user-select: text !important;
+    -webkit-user-select: text !important;
+    cursor: text !important;
+}
+
+#gemini-inline-popover .popover-actions {
+    display: flex !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+    margin-top: auto !important;
+}
+
+#gemini-inline-popover .btn-apply-fix {
+    flex: 1 !important;
+    background-color: #2563eb !important;
+    color: #ffffff !important;
+    border: none !important;
+    padding: 8px 12px !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    transition: background-color 0.15s ease !important;
+}
+
+#gemini-inline-popover .btn-apply-fix:hover {
+    background-color: #1d4ed8 !important;
+}
+
+#gemini-inline-popover .btn-apply-fix:disabled,
+#gemini-inline-popover .btn-apply-fix.is-pro-disabled {
+    background-color: #e2e8f0 !important;
+    color: #94a3b8 !important;
+    border: 1px solid #cbd5e1 !important;
+    cursor: not-allowed !important;
+    opacity: 0.8 !important;
+    box-shadow: none !important;
+}
+
+#gemini-inline-popover .btn-apply-fix:disabled:hover,
+#gemini-inline-popover .btn-apply-fix.is-pro-disabled:hover {
+    background-color: #e2e8f0 !important;
+}
+
+#gemini-inline-popover .popover-pro-notice {
+    font-size: 11px !important;
+    color: #64748b !important;
+    margin-top: 8px !important;
+    text-align: center !important;
+    line-height: 1.4 !important;
+    background: #f8fafc !important;
+    padding: 6px 10px !important;
+    border-radius: 6px !important;
+    border: 1px dashed #cbd5e1 !important;
+    flex-shrink: 0 !important;
+}
+
+#gemini-inline-popover .btn-dismiss-fix {
+    background-color: #f1f5f9 !important;
+    color: #475569 !important;
+    border: 1px solid #cbd5e1 !important;
+    padding: 8px 12px !important;
+    border-radius: 6px !important;
+    font-size: 13px !important;
+    font-weight: 500 !important;
+    cursor: pointer !important;
+    transition: background-color 0.15s ease !important;
+}
+
+#gemini-inline-popover .btn-dismiss-fix:hover {
+    background-color: #e2e8f0 !important;
+}
+
