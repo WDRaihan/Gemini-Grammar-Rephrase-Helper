@@ -678,6 +678,7 @@ let autoCheckDebounce = 2500;
 let activeInputElement = null;
 let activeInlineBadge = null;
 let activeInlinePopover = null;
+let badgeAttachedElement = null;
 
 // Per-element state map to isolate debounce timers, corrections, and statuses across multiple input fields
 const fieldStateMap = new WeakMap();
@@ -990,8 +991,10 @@ function getSafeExtensionUrl(path) {
 
 function ensureInlineBadge(targetEl) {
   if (!isExtensionValid()) return null;
-  const container = getModalContainer(targetEl || activeInputElement);
+  const target = targetEl || activeInputElement || badgeAttachedElement;
+  const container = getModalContainer(target);
   if (!container) return null;
+  if (target) badgeAttachedElement = target;
   if (activeInlineBadge) {
     if (activeInlineBadge.parentElement !== container) {
       container.appendChild(activeInlineBadge);
@@ -1017,8 +1020,10 @@ function ensureInlineBadge(targetEl) {
 
   badge.addEventListener('click', (e) => {
     e.stopPropagation();
-    if (!activeInputElement) return;
-    const state = getElementState(activeInputElement);
+    const currentTarget = activeInputElement || badgeAttachedElement;
+    if (!currentTarget) return;
+    activeInputElement = currentTarget;
+    const state = getElementState(currentTarget);
     if (badge.classList.contains('has-error') && state.correction) {
       toggleInlinePopover();
     }
@@ -1031,15 +1036,17 @@ function removeInlineBadge() {
   if (activeInlineBadge) {
     activeInlineBadge.remove();
     activeInlineBadge = null;
+    badgeAttachedElement = null;
   }
 }
 
 function updateBadgePosition() {
-  if (!activeInlineBadge || !activeInputElement || !activeInputElement.isConnected) {
+  const target = activeInputElement || badgeAttachedElement;
+  if (!activeInlineBadge || !target || !target.isConnected) {
     if (activeInlineBadge) activeInlineBadge.style.display = 'none';
     return;
   }
-  const rect = getComposerBounds(activeInputElement);
+  const rect = getComposerBounds(target);
   if (!rect || rect.width === 0 || rect.height === 0 || rect.bottom < 15 || rect.top > window.innerHeight - 15 || rect.right < 15 || rect.left > window.innerWidth - 15) {
     activeInlineBadge.style.display = 'none';
     return;
@@ -1047,7 +1054,7 @@ function updateBadgePosition() {
 
   activeInlineBadge.style.display = 'inline-flex';
   const badgeSize = 24;
-  const isSingleLine = activeInputElement.tagName === 'INPUT';
+  const isSingleLine = target.tagName === 'INPUT';
   let top, left;
 
   if (isSingleLine) {
@@ -1208,9 +1215,10 @@ function toggleInlinePopover() {
     removeInlinePopover();
     return;
   }
-  if (!activeInputElement) return;
+  const targetElement = activeInputElement || badgeAttachedElement;
+  if (!targetElement) return;
+  activeInputElement = targetElement;
 
-  const targetElement = activeInputElement; // Lock target element for apply fix
   const state = getElementState(targetElement);
   if (!state.correction) return;
 
@@ -1371,89 +1379,92 @@ function scheduleInlineCheck(el) {
   const currentReqId = ++state.requestId;
 
   // Wait debounce delay after user finishes typing
-  state.debounceTimer = setTimeout(async () => {
+  state.debounceTimer = setTimeout(() => {
     state.debounceTimer = null;
-    const currentRaw = getFieldText(root);
-    const currentText = currentRaw.trim();
-    if (!hasMetAutoCheckThreshold(currentRaw, autoCheckThresholdVal, autoCheckThresholdUnit)) return;
-    if (currentText.length < 2) return;
-    if (state.requestId !== currentReqId) return;
+    performInlineCheck(root, currentReqId);
+  }, autoCheckDebounce);
+}
 
-    // Ensure cursor is STILL actively focused inside this input element
-    const currentActive = getRootEditableElement(document.activeElement);
-    if (!currentActive || (currentActive !== root && !root.contains(document.activeElement))) {
-      return;
+async function performInlineCheck(root, reqId) {
+  if (!isAutoCheckEnabled || !root || !root.isConnected) return;
+  const state = getElementState(root);
+  const currentRaw = getFieldText(root);
+  const currentText = currentRaw.trim();
+
+  if (!hasMetAutoCheckThreshold(currentRaw, autoCheckThresholdVal, autoCheckThresholdUnit)) return;
+  if (currentText.length < 2) return;
+  if (state.requestId !== reqId) return;
+
+  const MAX_AUTO_CHECK_LENGTH = 2500;
+  if (currentText.length > MAX_AUTO_CHECK_LENGTH) {
+    state.status = 'idle';
+    if (activeInputElement === root || badgeAttachedElement === root) {
+      setBadgeState('idle', 'Text is long — select text & right-click');
+    }
+    return;
+  }
+
+  state.status = 'checking';
+  if (activeInputElement === root || !activeInputElement || badgeAttachedElement === root) {
+    ensureInlineBadge(root);
+    badgeAttachedElement = root;
+    setBadgeState('checking');
+  }
+
+  try {
+    const checkPromise = chrome.runtime.sendMessage({
+      type: 'AUTO_CHECK_GRAMMAR',
+      text: currentText
+    });
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('AUTO_CHECK_TIMEOUT')), 7000)
+    );
+
+    const response = await Promise.race([checkPromise, timeoutPromise]);
+
+    // Guard against race conditions: verify this is still the freshest request and text didn't change
+    if (state.requestId !== reqId) return;
+    if (getFieldText(root).trim() !== currentText) return;
+
+    if (typeof response?.isPro === 'boolean') {
+      isProUser = response.isPro;
     }
 
-    const MAX_AUTO_CHECK_LENGTH = 2500;
-    if (currentText.length > MAX_AUTO_CHECK_LENGTH) {
+    if (!response?.success) {
       state.status = 'idle';
-      if (activeInputElement === root) {
-        setBadgeState('idle', 'Text is long — select text & right-click');
-      }
-      return;
-    }
-
-    state.status = 'checking';
-    if (activeInputElement === root) {
-      setBadgeState('checking');
-    }
-
-    try {
-      const checkPromise = chrome.runtime.sendMessage({
-        type: 'AUTO_CHECK_GRAMMAR',
-        text: currentText
-      });
-      const timeoutPromise = new Promise((_, reject) =>
-        setTimeout(() => reject(new Error('AUTO_CHECK_TIMEOUT')), 7000)
-      );
-
-      const response = await Promise.race([checkPromise, timeoutPromise]);
-
-      // Guard against race conditions: verify this is still the freshest request and text didn't change
-      if (state.requestId !== currentReqId) return;
-      if (getFieldText(root).trim() !== currentText) return;
-
-      if (typeof response?.isPro === 'boolean') {
-        isProUser = response.isPro;
-      }
-
-      if (!response?.success) {
-        state.status = 'idle';
-        if (activeInputElement === root) {
-          setBadgeState('idle', 'Gemini');
-        }
-        return;
-      }
-
-      state.lastCheckedText = currentText;
-
-      if (response.hasErrors && response.correctedText && response.correctedText !== currentText) {
-        state.correction = {
-          originalText: currentText,
-          correctedText: response.correctedText,
-          explanation: response.explanation || 'Grammar & spelling fix'
-        };
-        state.status = 'has-error';
-
-        // CRITICAL: Only update badge UI if this element is STILL the active focused element
-        if (activeInputElement === root) {
-          setBadgeState('has-error', 'Fix Available');
-        }
-      } else {
-        state.correction = null;
-        state.status = 'clean';
-        if (activeInputElement === root) {
-          setBadgeState('clean', 'Looking good');
-        }
-      }
-    } catch (_) {
-      state.status = 'idle';
-      if (activeInputElement === root) {
+      if (activeInputElement === root || badgeAttachedElement === root) {
         setBadgeState('idle', 'Gemini');
       }
+      return;
     }
-  }, autoCheckDebounce);
+
+    state.lastCheckedText = currentText;
+
+    if (response.hasErrors && response.correctedText && response.correctedText !== currentText) {
+      state.correction = {
+        originalText: currentText,
+        correctedText: response.correctedText,
+        explanation: response.explanation || 'Grammar & spelling fix'
+      };
+      state.status = 'has-error';
+
+      // Always show fix available on the badge
+      ensureInlineBadge(root);
+      badgeAttachedElement = root;
+      setBadgeState('has-error', 'Fix Available');
+    } else {
+      state.correction = null;
+      state.status = 'clean';
+      if (activeInputElement === root || badgeAttachedElement === root) {
+        setBadgeState('clean', 'Looking good');
+      }
+    }
+  } catch (_) {
+    state.status = 'idle';
+    if (activeInputElement === root || badgeAttachedElement === root) {
+      setBadgeState('idle', 'Gemini');
+    }
+  }
 }
 
 // Global delegated event listeners for real-time checking
@@ -1462,6 +1473,7 @@ document.addEventListener('focusin', (e) => {
   const root = getRootEditableElement(e.target);
   if (root) {
     activeInputElement = root;
+    badgeAttachedElement = root;
     syncBadgeWithElement(root);
   }
 }, true);
@@ -1470,11 +1482,12 @@ document.addEventListener('focusout', (e) => {
   if (!isAutoCheckEnabled) return;
   const root = getRootEditableElement(e.target);
   if (root) {
-    // Cancel any pending check when the user clicks away
     const state = getElementState(root);
+    // If a check was pending on debounce when the user clicked away, execute it immediately!
     if (state.debounceTimer) {
       clearTimeout(state.debounceTimer);
       state.debounceTimer = null;
+      performInlineCheck(root, state.requestId);
     }
 
     setTimeout(() => {
@@ -1483,8 +1496,12 @@ document.addEventListener('focusout', (e) => {
           !document.activeElement?.closest?.('#gemini-inline-popover') && 
           !document.activeElement?.closest?.('#gemini-inline-badge')) {
         if (!activeInlinePopover) {
-          removeInlineBadge();
-          activeInputElement = null;
+          const st = getElementState(root);
+          // If the element has a fix available or is actively checking, keep the badge visible
+          if (st.status !== 'has-error' && st.status !== 'checking') {
+            removeInlineBadge();
+            activeInputElement = null;
+          }
         }
       }
     }, 150);
