@@ -125,9 +125,19 @@ async function checkChromeBuiltInAIStatus() {
 
     if (typeof ModelAPI.availability === 'function') {
       try {
-        availableStatus = await ModelAPI.availability(modelOptions);
-      } catch (_) {
         availableStatus = await ModelAPI.availability();
+      } catch (_) {
+        try {
+          availableStatus = await ModelAPI.availability(modelOptions);
+        } catch (_) {}
+      }
+      if (availableStatus === 'unavailable' || availableStatus === 'no') {
+        try {
+          const withOpts = await ModelAPI.availability(modelOptions);
+          if (withOpts && withOpts !== 'unavailable' && withOpts !== 'no') {
+            availableStatus = withOpts;
+          }
+        } catch (_) {}
       }
     } else if (typeof ModelAPI.capabilities === 'function') {
       const caps = await ModelAPI.capabilities();
