@@ -229,8 +229,13 @@ function loadOptions() {
       apiKeyInput.value = result.geminiApiKey;
     }
     if (result.geminiModel) {
-      ensureOptionExists(result.geminiModel);
-      modelSelect.value = result.geminiModel;
+      let model = result.geminiModel;
+      if (model === 'gemini-3.8-flash' || model === 'gemini-2.5-flash') {
+        model = 'gemini-2.0-flash';
+        chrome.storage.sync.set({ geminiModel: 'gemini-2.0-flash' }).catch(() => {});
+      }
+      ensureOptionExists(model);
+      modelSelect.value = model;
     }
     const autoCheckOn = result.autoCheckEnabled === true;
     if (autoCheckToggle) {
@@ -399,15 +404,15 @@ async function fetchAvailableModels(showSuccessMsg = true) {
       modelSelect.appendChild(opt);
     });
 
-    // Pick best model: prefer previous selection, or flash models
+    // Pick best model: prefer previous selection (if valid), or recommended flash models
+    const validPrevious = previousModel && previousModel !== 'gemini-3.8-flash' && previousModel !== 'gemini-2.5-flash' ? previousModel : null;
     const preferredOrder = [
-      previousModel,
-      'gemini-3.8-flash',
-      'gemini-2.5-flash',
+      validPrevious,
       'gemini-2.0-flash',
       'gemini-1.5-flash',
+      'gemini-1.5-pro',
       availableModels[0]
-    ];
+    ].filter(Boolean);
 
     const bestModel = preferredOrder.find(m => availableModels.includes(m)) || availableModels[0];
     modelSelect.value = bestModel;

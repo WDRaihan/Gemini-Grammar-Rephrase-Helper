@@ -12,7 +12,7 @@ A Chrome Extension (Manifest V3) powered by free on-device Chrome Built-in AI (G
 
 - **Chrome Built-in AI (Free & On-Device)**: Run 100% offline and on-device with Chrome's Built-in Prompt API (Gemini Nano)—completely free with no external API key required.
 - **Context Menu & Shortcut**: Highlight text on any webpage and right-click to choose **"Fix Grammar & Rephrase"**, or press `Option+Shift+G` (macOS) / `Alt+Shift+G` (Windows/Linux).
-- **Intelligent Corrections**: Uses Google's Gemini models (`gemini-2.5-flash` or `gemini-2.0-flash`) via structured JSON output for reliable parsing.
+- **Intelligent Corrections**: Uses Google's official Gemini models (`gemini-2.0-flash` or `gemini-1.5-flash`) via structured JSON output for fast, reliable parsing.
 - **Multiple Options**: Provides 1 direct grammar fix and 2 rephrasing variations.
 - **Real-Time Input Field Grammar Checker**: Grammarly-style unobtrusive badge on editable inputs with instant checking, error highlight, and 1-click quick fix popover.
 - **Rephrase History Log (Pro)**: Automatically saves your last 50 rephrasings with timestamps, full-text keyword search, style filters, 1-click clipboard copying, and JSON export.

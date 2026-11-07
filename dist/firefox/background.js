@@ -144,11 +144,7 @@ function formatFriendlyErrorMessage(rawError) {
   // 2. Model deprecated / no longer available / not found (HTTP 404)
   if (lower.includes("no longer available") || lower.includes("not found") || lower.includes("not supported") || lower.includes("listmodels")) {
     const matches = [...err.matchAll(/models\/([a-zA-Z0-9.-]+)/g)].map(m => m[1]);
-    const recommended = matches.find(m => !lower.includes("modelservice") && m !== "gemini-1.5-flash" && m !== "gemini-2.0-flash" && m !== "gemini-2.5-flash");
-    if (recommended) {
-      return `The selected model is no longer available. Please open extension Options and switch to a supported model (such as "${recommended}").`;
-    }
-    return "The selected Gemini model is no longer available or supported. Please open extension Options to select another model.";
+    return "The selected Gemini model is no longer available or supported. Please open extension Options to select a supported model (such as gemini-2.0-flash or gemini-1.5-flash).";
   }
 
   // 3. High demand / Server busy / Overloaded (HTTP 503)
@@ -908,9 +904,10 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
 
   // Branch 2: Original Gemini Cloud API Flow (Runs when useChromeBuiltInAI is false OR as fallback)
   const apiKey = syncData.geminiApiKey?.trim();
-  let rawModel = syncData.geminiModel?.trim() || "gemini-3.8-flash";
-  if (rawModel === "gemini-2.0-flash") {
-    rawModel = "gemini-3.8-flash";
+  let rawModel = syncData.geminiModel?.trim() || "gemini-2.0-flash";
+  if (rawModel === "gemini-3.8-flash" || rawModel === "gemini-2.5-flash") {
+    rawModel = "gemini-2.0-flash";
+    chrome.storage.sync.set({ geminiModel: "gemini-2.0-flash" }).catch(() => {});
   }
   const model = rawModel.replace(/^models\//, "");
 
@@ -1004,6 +1001,29 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
       throw fetchErr;
     } finally {
       clearTimeout(timeoutId);
+    }
+
+    if (!response.ok) {
+      // Automatic self-healing: if selected model returns 404 Not Found, retry with gemini-1.5-flash
+      if (response.status === 404 && model !== 'gemini-1.5-flash') {
+        console.warn(`Model "${model}" returned 404 Not Found. Automatically falling back to gemini-1.5-flash...`);
+        const fallbackModel = 'gemini-1.5-flash';
+        const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(fallbackModel)}:generateContent`;
+        try {
+          const retryResponse = await fetch(fallbackUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'x-goog-api-key': apiKey
+            },
+            body: JSON.stringify(payload)
+          });
+          if (retryResponse.ok) {
+            chrome.storage.sync.set({ geminiModel: fallbackModel }).catch(() => {});
+            response = retryResponse;
+          }
+        } catch (_) {}
+      }
     }
 
     if (!response.ok) {
@@ -1132,6 +1152,7 @@ async function processFixGrammar(text, tab, style = 'default', customPrompt = ''
 // 3. Message handler for real-time auto-check, styles, and licensing
 const autoCheckCache = new Map();
 const MAX_CACHE_SIZE = 100;
+let rateLimitCooldownUntil = 0;
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'AUTO_CHECK_GRAMMAR') {
@@ -1201,6 +1222,11 @@ async function handleAutoCheckGrammar(text, tab) {
     return { hasErrors: false };
   }
 
+  // If rate limit (HTTP 429) was recently hit on free tier, skip background checks to preserve quota
+  if (Date.now() < rateLimitCooldownUntil) {
+    return { hasErrors: false, skipped: true };
+  }
+
   // Prevent heavy processing on massive text blocks (source code, books, huge pastes)
   const MAX_AUTO_CHECK_LENGTH = 2500;
   if (cleanText.length > MAX_AUTO_CHECK_LENGTH) {
@@ -1244,7 +1270,11 @@ async function handleAutoCheckGrammar(text, tab) {
     return { hasErrors: false, error: 'NO_API_KEY' };
   }
 
-  const rawModel = data.geminiModel?.trim() || "gemini-3.8-flash";
+  let rawModel = data.geminiModel?.trim() || "gemini-2.0-flash";
+  if (rawModel === "gemini-3.8-flash" || rawModel === "gemini-2.5-flash") {
+    rawModel = "gemini-2.0-flash";
+    chrome.storage.sync.set({ geminiModel: "gemini-2.0-flash" }).catch(() => {});
+  }
   const model = rawModel.replace(/^models\//, "");
 
   const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${encodeURIComponent(model)}:generateContent`;
@@ -1312,6 +1342,32 @@ ${JSON.stringify(cleanText)}`;
     throw fetchErr;
   } finally {
     clearTimeout(timeoutId);
+  }
+
+  if (!response.ok) {
+    if (response.status === 429) {
+      rateLimitCooldownUntil = Date.now() + 60000; // 60s cooldown to protect manual right-click quota
+      return { hasErrors: false, rateLimited: true };
+    }
+
+    // Auto self-heal: if selected model 404s, retry once with gemini-1.5-flash
+    if (response.status === 404 && model !== 'gemini-1.5-flash') {
+      try {
+        const fallbackUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
+        const retryResponse = await fetch(fallbackUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+          },
+          body: JSON.stringify(payload)
+        });
+        if (retryResponse.ok) {
+          chrome.storage.sync.set({ geminiModel: 'gemini-1.5-flash' }).catch(() => {});
+          response = retryResponse;
+        }
+      } catch (_) {}
+    }
   }
 
   if (!response.ok) {
