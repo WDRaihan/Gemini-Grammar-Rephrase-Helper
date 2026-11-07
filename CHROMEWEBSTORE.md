@@ -183,7 +183,8 @@ English
 
 | Version | Date | Changes | Status |
 |---------|------|---------|--------|
-| 1.2.3 | 2026-10-31 | Fixed auto-check cancelling on blur / click outside, prevented in-flight check abort, retained inline fix badge for un-focused inputs, and updated LanguageModel availability options | Ready to Submit |
+| 1.2.4 | 2026-11-08 | Dynamic timeout scaling for long text checks (up to 60s), adaptive token limits for on-device Gemini Nano, resilient JSON fallback parsing, and accurate Built-in AI error handling | Ready to Submit |
+| 1.2.3 | 2026-10-31 | Fixed auto-check cancelling on blur / click outside, prevented in-flight check abort, retained inline fix badge for un-focused inputs, and updated LanguageModel availability options | Published |
 | 1.2.2 | 2026-10-18 | Auto-check code editor exclusions (WordPress/CodeMirror/Monaco), 7s/10s timeout protections, focus-only typing triggers, and dual-engine AI descriptions | Published |
 | 1.2.1 | 2026-10-17 | Centered modal UI fix using flexbox overlay, added Escape key dismissal, added Alt+Shift+G keyboard shortcut with dynamic OS context menu label, API timeout protection, and auto-model discovery | Published |
 | 1.2 | 2026-10-11 | Migrated Gemini API to gemini-2.5-flash, added connection tester | Superseded |

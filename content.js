@@ -1416,8 +1416,9 @@ async function performInlineCheck(root, reqId) {
       type: 'AUTO_CHECK_GRAMMAR',
       text: currentText
     });
+    const autoCheckTimeoutMs = Math.max(12000, Math.min(30000, currentText.length * 25));
     const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('AUTO_CHECK_TIMEOUT')), 7000)
+      setTimeout(() => reject(new Error('AUTO_CHECK_TIMEOUT')), autoCheckTimeoutMs)
     );
 
     const response = await Promise.race([checkPromise, timeoutPromise]);
